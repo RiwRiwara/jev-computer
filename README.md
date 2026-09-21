@@ -41,6 +41,16 @@ It didn't start as a computer. It started as a question: **can Jev add numbers?*
 
 The lesson carries over to real Jev apps: **don't ask a model one big question it has to reason through. Break it into the smallest judgments it can answer sharply, and let code combine them.**
 
+### In the Jev Playground
+
+**The first try:** asking for NAND directly with a = 1, b = 1. Jev said 2% "true", which is correct (NAND of 1 and 1 is 0).
+
+![First try: asking NAND directly in the Jev Playground](images/playground-first-nand.png)
+
+**What the machine uses now:** the AND question for all four cases in one request, then inverted to NAND. Jev answers 0%, 1%, 1% and 99%. The machine switched to the AND wording because negated questions ("Is it false that…") make Noul less sharp, and because one request covering all four cases is cheaper and can be tested completely.
+
+![The gate the machine uses: all four cases in one request](images/playground-gate-4-cases.png)
+
 ### Is it really built from Jev?
 
 Yes, in the same way a real computer is built from transistors. Transistors decide what each gate outputs, but they still need a circuit board, wires and a clock. Here, **Jev decides what every gate outputs**. `cpu.json` is the circuit board, and `jev_run.py` is the wires and the clock. A computer built from redstone in Minecraft works the same way: it runs on a game engine written in Java, yet everyone calls it a redstone computer.
