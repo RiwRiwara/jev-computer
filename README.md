@@ -232,6 +232,12 @@ Jev answers the 4 cases once per run, and those answers drive every gate on ever
 
 This is not a practical computer: it runs about ten billion times slower than a real CPU, and nobody should do arithmetic through a language model. It's a demonstration of how to use a model like Jev well: **don't ask one big question it has to reason through. Break the work into the smallest judgments it can answer sharply, and let code combine them.**
 
+## So… why?
+
+Honestly? No good reason. Someone asked "can Jev add?", the answer was "sort of", and a few thousand NAND gates later there's a computer that needs an API call to know what 1 AND 1 is.
+
+But every sci-fi apocalypse starts with someone teaching an AI to count. Today it computes 5!. Tomorrow… it still only computes 5!, because 6! overflows 8 bits. Humanity is safe. For now. 🤖
+
 ## License
 
 MIT
