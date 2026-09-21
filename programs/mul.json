@@ -1,17 +1,60 @@
 {
-  "about": "a x b by repeated addition (b is the loop count). No output means the product is over 255.",
-  "inputs": {"a": 14, "b": 15},
-  "code": [
-    "LDA 15", "JZ 9", "SUB 12", "STA 15",
-    "LDA 13", "ADD 14", "JC 11", "STA 13",
-    "JMP 0", "LDA 13", "OUT", "HLT"
+  "about": "a x b by repeated addition (b is the loop count). Answers overflow above 255.",
+  "inputs": [
+    "a",
+    "b"
   ],
-  "data": {"12": 1, "13": 0, "14": 7, "15": 6},
-  "result": {"no_output": "overflow (> 255)"},
+  "code": [
+    "loop: LDA b",
+    "JZ done",
+    "SUB one",
+    "STA b",
+    "LDA acc",
+    "ADD a",
+    "JC over",
+    "STA acc",
+    "JMP loop",
+    "done: LDA acc",
+    "OUT",
+    "over: HLT"
+  ],
+  "data": {
+    "a": 7,
+    "b": 6,
+    "acc": 0,
+    "one": 1
+  },
+  "result": {
+    "no_output": "overflow (> 255)"
+  },
   "tests": [
-    {"with": {"a": 7, "b": 6}, "expect": 42},
-    {"with": {"a": 12, "b": 0}, "expect": 0},
-    {"with": {"a": 15, "b": 17}, "expect": 255},
-    {"with": {"a": 16, "b": 16}, "expect": "overflow (> 255)"}
+    {
+      "with": {
+        "a": 7,
+        "b": 6
+      },
+      "expect": 42
+    },
+    {
+      "with": {
+        "a": 12,
+        "b": 0
+      },
+      "expect": 0
+    },
+    {
+      "with": {
+        "a": 15,
+        "b": 17
+      },
+      "expect": 255
+    },
+    {
+      "with": {
+        "a": 16,
+        "b": 16
+      },
+      "expect": "overflow (> 255)"
+    }
   ]
 }

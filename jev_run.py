@@ -7,11 +7,12 @@ Programs are JSON files in programs/ (see README for the format).
 
     python jev_run.py programs/fib.json                 # run it (1 Jev request)
     python jev_run.py programs/add.json a=40 b=3        # set the program's inputs
+    python jev_run.py programs/bubble_sort.json list=5,2,9,1,7,3   # a list input
     python jev_run.py programs/add.json a=40 b=3 --trace   # show every instruction
     python jev_run.py programs/add.json --test          # run the tests inside the JSON
     python jev_run.py --selftest                        # check the gate answers, 5 requests
 """
-import json, os, sys, time, urllib.request, urllib.error
+import json, os, re, sys, time, urllib.request, urllib.error
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 PRICE_PER_MTOK = 0.042  # jev-1.13 input price
@@ -79,59 +80,83 @@ def ask_gates(m, cases, st):
 
 # ───────────────────────────── the circuit ─────────────────────────────
 
-def run(m, init, max_cycles=4000, on_cycle=None):
+def run(m, init, max_cycles=100_000, on_cycle=None):
     """Run the circuit from `init` register values until its halt bit.
     One request asks Jev all 4 gate cases; every gate in the machine uses those answers.
     Returns (displayed values, Stats)."""
     st = Stats()
     yes = m["gate"]["bit_if_yes"]
-    table = {ab: yes if p >= 0.5 else 1 - yes for ab, p in ask_gates(m, ALL_CASES, st).items()}
+    answers = ask_gates(m, ALL_CASES, st)
+    table = [yes if answers[ab] >= 0.5 else 1 - yes for ab in ALL_CASES]  # index = 2a + b
 
     bits = [(init.get(r, 0) >> i) & 1 for r, w in m["registers"] for i in range(w)]
     num = lambda v, nodes: sum(v[n] << i for i, n in enumerate(nodes))
     offs, o = {}, 0
     for r, w in m["registers"]: offs[r] = list(range(o, o + w)); o += w
-    out = []
+    gates, show, out = m["gates"], m["display"]["show"], []
     for cycle in range(max_cycles):
-        v, g = bits + [0] * len(m["gates"]), len(bits)
-        for size in m["level_sizes"]:  # gates in one level don't depend on each other
-            level = m["gates"][g - len(bits):g - len(bits) + size]
-            for i, (x, y) in enumerate(level): v[g + i] = table[(v[x], v[y])]
-            g += size
+        v = list(bits)
+        for x, y in gates:  # gates are stored in dependency order
+            v.append(table[2 * v[x] + v[y]])
         st.cycles += 1
-        st.gate_evals += len(m["gates"])
-        shown = num(v, m["display"]["show"]) if v[m["display"]["when"]] else None
-        if on_cycle: on_cycle(cycle, {r: num(v, offs[r]) for r, _ in m["registers"]}, shown, st)
+        st.gate_evals += len(gates)
+        shown = num(v, show) if v[m["display"]["when"]] else None
+        if on_cycle: on_cycle(cycle, {r: num(v, offs[r]) for r in offs}, shown, st)
         if v[m["halt"]]: return out, st
         if shown is not None: out.append(shown)
         bits = [v[n] for n in m["next"]]  # clock edge
-    raise RuntimeError(f"no HLT after {max_cycles} clock cycles — does the program loop forever? (e.g. dividing by 0)")
+    raise RuntimeError(f"no HLT after {max_cycles:,} clock cycles — does the program loop forever? (e.g. dividing by 0)")
 
 
 # ───────────────────────────── programs (JSON) ─────────────────────────────
 
 def assemble(m, prog, inputs=None):
-    """Program JSON -> initial register values, using the instruction set in cpu.json."""
+    """Program JSON -> initial RAM, using the instruction set in cpu.json.
+    Code comes first (2 bytes per instruction), then each data item in order.
+    Operands can be numbers, labels, data names, or name+n / name-n."""
     isa, words = m["isa"], m["isa"]["words"]
-    code, data, names = prog.get("code", []), prog.get("data", {}), prog.get("inputs", {})
-    if len(code) > words:
-        raise ValueError(f"program has {len(code)} instructions; RAM holds {words} bytes")
+    size, labels, lines = isa["instruction_bytes"], {}, []
+    for i, line in enumerate(prog.get("code", [])):
+        label, sep, rest = line.rpartition(":")
+        if sep:
+            labels[label.strip()] = i * size
+        lines.append(rest.split())
+    addr, data = len(lines) * size, prog.get("data", {})
+    for name, value in data.items():
+        labels[name] = addr
+        addr += len(value) if isinstance(value, list) else 1
+    if addr > words:
+        raise ValueError(f"program needs {addr} bytes; RAM holds {words}")
+
+    def operand(text, i):
+        if text.isdigit():
+            return int(text)
+        name, sign, offset = re.fullmatch(r"(\w+)(?:([+-])(\d+))?", text).groups()
+        if name not in labels:
+            raise ValueError(f"line {i}: unknown label or data name {name!r}")
+        return (labels[name] + (int(offset) if sign == "+" else -int(offset or 0))) % words
+
     ram = [0] * words
-    for i, line in enumerate(code):
-        op, *arg = line.split()
-        if op.upper() not in isa["opcodes"]:
-            raise ValueError(f"line {i}: unknown instruction {op!r}; known: {', '.join(isa['opcodes'])}")
-        ram[i] = (isa["opcodes"][op.upper()] << isa["operand_bits"]) | (int(arg[0]) if arg else 0)
-    for addr, value in data.items():
-        if int(addr) < len(code):
-            raise ValueError(f"data at address {addr} overlaps the code (addresses 0–{len(code) - 1})")
-        ram[int(addr)] = value
+    for i, parts in enumerate(lines):
+        if not parts or parts[0].upper() not in isa["opcodes"]:
+            raise ValueError(f"line {i}: unknown instruction {' '.join(parts)!r}; "
+                             f"known: {', '.join(isa['opcodes'])}")
+        ram[i * size] = isa["opcodes"][parts[0].upper()]
+        ram[i * size + 1] = operand(parts[1], i) if len(parts) > 1 else 0
+
+    values = dict(data)
     for name, value in (inputs or {}).items():
-        if name not in names:
-            raise ValueError(f"unknown input {name!r}; this program takes: {', '.join(names) or 'none'}")
-        if not 0 <= value <= 255:
-            raise ValueError(f"{name}={value}: inputs are 8-bit (0–255)")
-        ram[names[name]] = value
+        if name not in prog.get("inputs", []):
+            raise ValueError(f"unknown input {name!r}; this program takes: "
+                             f"{', '.join(prog.get('inputs', [])) or 'none'}")
+        if isinstance(data[name], list) and (not isinstance(value, list) or len(value) != len(data[name])):
+            raise ValueError(f"{name} is a list of {len(data[name])} numbers, like {name}={','.join(map(str, data[name]))}")
+        values[name] = value
+    for name, value in values.items():
+        for k, byte in enumerate(value if isinstance(value, list) else [value]):
+            if not 0 <= byte <= 255:
+                raise ValueError(f"{name}={value}: values are 8-bit (0–255)")
+            ram[labels[name] + k] = byte
     return {f"{isa['memory']}{k}": v for k, v in enumerate(ram)}
 
 
@@ -145,17 +170,17 @@ def read_result(prog, out):
     return out[0] + rule.get("add", 0) + rule.get("second_output_adds", 0) * (len(out) > 1)
 
 
-def disasm(m, byte):
-    names = {v: k for k, v in m["isa"]["opcodes"].items()}
-    bits = m["isa"]["operand_bits"]
-    name = names.get(byte >> bits, "?")
-    return name if name in ("NOP", "OUT", "HLT") else f"{name} {byte & ((1 << bits) - 1)}"
+def disasm(m, op, arg):
+    name = {v: k for k, v in m["isa"]["opcodes"].items()}.get(op & 15, "?")
+    return name if name in ("NOP", "OUT", "HLT") else f"{name} {arg}"
 
 
 def execute(m, prog, inputs, trace=False):
+    mem, words = m["isa"]["memory"], m["isa"]["words"]
     def show(cycle, regs, shown, st):
-        ins = disasm(m, regs[f"{m['isa']['memory']}{regs['pc']}"])
-        print(f"  {cycle:5d}  pc={regs['pc']:2d}  {ins:<7} A={regs['a']:3d} C={regs['c']}"
+        pc = regs["pc"]
+        ins = disasm(m, regs[f"{mem}{pc}"], regs[f"{mem}{(pc + 1) % words}"])
+        print(f"  {cycle:6d}  pc={pc:3d}  {ins:<8} A={regs['a']:3d} C={regs['c']}"
               + (f"   ▶ OUT {shown}" if shown is not None and ins != "HLT" else ""))
     out, st = run(m, assemble(m, prog, inputs), on_cycle=show if trace else None)
     return read_result(prog, out), out, st
@@ -178,8 +203,9 @@ def test(m, prog):
         bad += not ok
         requests += st.requests
         tokens += st.input_tokens
-        label = " ".join(f"{k}={v}" for k, v in inputs.items()) or "(defaults)"
-        print(f"{'PASS' if ok else 'FAIL'}  {label:<16} → {answer}"
+        label = " ".join(f"{k}={','.join(map(str, v)) if isinstance(v, list) else v}"
+                         for k, v in inputs.items()) or "(defaults)"
+        print(f"{'PASS' if ok else 'FAIL'}  {label:<22} → {answer}"
               + ("" if ok else f"   expected {case['expect']}") + f"   ({st.cycles} cycles)")
     print(f"\n{len(tests) - bad}/{len(tests)} passed · {requests} Jev requests · "
           f"{tokens:,} input tokens · {time.time() - t0:.1f} s")
@@ -222,9 +248,9 @@ def main():
     inputs = {}
     for a in args[1:]:
         k, sep, v = a.partition("=")
-        if not sep or not v.isdigit():
-            sys.exit(f"inputs look like name=number, got {a!r}")
-        inputs[k] = int(v)
+        if not sep or not all(x.isdigit() for x in v.split(",")):
+            sys.exit(f"inputs look like name=5 or list=4,7,9 — got {a!r}")
+        inputs[k] = [int(x) for x in v.split(",")] if "," in v else int(v)
     if prog.get("about"):
         print(prog["about"])
     try:

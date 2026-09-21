@@ -1,0 +1,87 @@
+{
+  "about": "x to the power y: y multiplications, each by repeated addition. Answers overflow above 255.",
+  "inputs": [
+    "x",
+    "y"
+  ],
+  "code": [
+    "loop: LDA y",
+    "JZ done",
+    "SUB one",
+    "STA y",
+    "LDI 0",
+    "STA t",
+    "LDA x",
+    "STA k",
+    "inner: LDA k",
+    "JZ next",
+    "SUB one",
+    "STA k",
+    "LDA t",
+    "ADD r",
+    "JC over",
+    "STA t",
+    "JMP inner",
+    "next: LDA t",
+    "STA r",
+    "JMP loop",
+    "done: LDA r",
+    "OUT",
+    "over: HLT"
+  ],
+  "data": {
+    "x": 3,
+    "y": 4,
+    "r": 1,
+    "k": 0,
+    "t": 0,
+    "one": 1
+  },
+  "result": {
+    "no_output": "overflow (> 255)"
+  },
+  "tests": [
+    {
+      "with": {
+        "x": 3,
+        "y": 4
+      },
+      "expect": 81
+    },
+    {
+      "with": {
+        "x": 2,
+        "y": 7
+      },
+      "expect": 128
+    },
+    {
+      "with": {
+        "x": 3,
+        "y": 5
+      },
+      "expect": 243
+    },
+    {
+      "with": {
+        "x": 5,
+        "y": 0
+      },
+      "expect": 1
+    },
+    {
+      "with": {
+        "x": 0,
+        "y": 3
+      },
+      "expect": 0
+    },
+    {
+      "with": {
+        "x": 7,
+        "y": 3
+      },
+      "expect": "overflow (> 255)"
+    }
+  ]
+}

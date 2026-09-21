@@ -1,17 +1,110 @@
 {
-  "about": "Find x in the list [a0, a1, a2]. Prints its position 0-2, or 3 if x is not in the list. The loop rewrites its own LDA instruction to walk the list.",
-  "inputs": {"a0": 12, "a1": 13, "a2": 14, "x": 15},
-  "code": [
-    "LDA 12", "SUB 15", "JZ 7",
-    "LDA 0", "ADD 11", "STA 0", "JMP 0",
-    "LDA 0", "SUB 3", "OUT", "HLT"
+  "about": "Position (0-7) of x in a list of 8 numbers, or 'not found'. Walks the list by rewriting its own LDA instruction.",
+  "inputs": [
+    "list",
+    "x"
   ],
-  "data": {"11": 1, "12": 4, "13": 7, "14": 9, "15": 7},
-  "result": {"add": -12},
+  "code": [
+    "loop: LDA i",
+    "SUB n",
+    "JZ not_found",
+    "get: LDA list",
+    "SUB x",
+    "JZ found",
+    "LDA get+1",
+    "ADD one",
+    "STA get+1",
+    "LDA i",
+    "ADD one",
+    "STA i",
+    "JMP loop",
+    "found: LDA i",
+    "OUT",
+    "not_found: HLT"
+  ],
+  "data": {
+    "list": [
+      4,
+      7,
+      9,
+      15,
+      23,
+      42,
+      99,
+      200
+    ],
+    "x": 42,
+    "i": 0,
+    "n": 8,
+    "one": 1
+  },
+  "result": {
+    "no_output": "not found"
+  },
   "tests": [
-    {"with": {"a0": 4, "a1": 7, "a2": 9, "x": 4}, "expect": 0},
-    {"with": {"a0": 4, "a1": 7, "a2": 9, "x": 7}, "expect": 1},
-    {"with": {"a0": 4, "a1": 7, "a2": 9, "x": 9}, "expect": 2},
-    {"with": {"a0": 4, "a1": 7, "a2": 9, "x": 5}, "expect": 3}
+    {
+      "with": {
+        "list": [
+          4,
+          7,
+          9,
+          15,
+          23,
+          42,
+          99,
+          200
+        ],
+        "x": 4
+      },
+      "expect": 0
+    },
+    {
+      "with": {
+        "list": [
+          4,
+          7,
+          9,
+          15,
+          23,
+          42,
+          99,
+          200
+        ],
+        "x": 42
+      },
+      "expect": 5
+    },
+    {
+      "with": {
+        "list": [
+          4,
+          7,
+          9,
+          15,
+          23,
+          42,
+          99,
+          200
+        ],
+        "x": 200
+      },
+      "expect": 7
+    },
+    {
+      "with": {
+        "list": [
+          4,
+          7,
+          9,
+          15,
+          23,
+          42,
+          99,
+          200
+        ],
+        "x": 5
+      },
+      "expect": "not found"
+    }
   ]
 }

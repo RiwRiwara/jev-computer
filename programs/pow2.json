@@ -1,18 +1,60 @@
 {
   "about": "2 to the power y, by doubling y times. Answers overflow above 255 (y > 7).",
-  "inputs": {"y": 13},
-  "code": [
-    "LDA 13", "JZ 9", "SUB 12", "STA 13",
-    "LDA 14", "ADD 14", "JC 11", "STA 14", "JMP 0",
-    "LDA 14", "OUT", "HLT"
+  "inputs": [
+    "y"
   ],
-  "data": {"12": 1, "13": 5, "14": 1},
-  "result": {"no_output": "overflow (> 255)"},
+  "code": [
+    "loop: LDA y",
+    "JZ done",
+    "SUB one",
+    "STA y",
+    "LDA r",
+    "ADD r",
+    "JC over",
+    "STA r",
+    "JMP loop",
+    "done: LDA r",
+    "OUT",
+    "over: HLT"
+  ],
+  "data": {
+    "y": 5,
+    "r": 1,
+    "one": 1
+  },
+  "result": {
+    "no_output": "overflow (> 255)"
+  },
   "tests": [
-    {"with": {"y": 0}, "expect": 1},
-    {"with": {"y": 1}, "expect": 2},
-    {"with": {"y": 5}, "expect": 32},
-    {"with": {"y": 7}, "expect": 128},
-    {"with": {"y": 8}, "expect": "overflow (> 255)"}
+    {
+      "with": {
+        "y": 0
+      },
+      "expect": 1
+    },
+    {
+      "with": {
+        "y": 1
+      },
+      "expect": 2
+    },
+    {
+      "with": {
+        "y": 5
+      },
+      "expect": 32
+    },
+    {
+      "with": {
+        "y": 7
+      },
+      "expect": 128
+    },
+    {
+      "with": {
+        "y": 8
+      },
+      "expect": "overflow (> 255)"
+    }
   ]
 }

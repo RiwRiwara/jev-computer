@@ -1,0 +1,90 @@
+{
+  "about": "Is n prime? Prints 1 for prime, 0 for not. Tries every divisor d = 2 .. n-1, dividing by repeated subtraction.",
+  "inputs": [
+    "n"
+  ],
+  "code": [
+    "LDA n",
+    "SUB two",
+    "JC start",
+    "LDI 0",
+    "OUT",
+    "HLT",
+    "start: LDI 2",
+    "STA d",
+    "outer: LDA d",
+    "SUB n",
+    "JZ is_prime",
+    "LDA n",
+    "mod: SUB d",
+    "JZ not_prime",
+    "JC mod",
+    "LDA d",
+    "ADD one",
+    "STA d",
+    "JMP outer",
+    "is_prime: LDI 1",
+    "OUT",
+    "HLT",
+    "not_prime: LDI 0",
+    "OUT",
+    "HLT"
+  ],
+  "data": {
+    "n": 97,
+    "d": 0,
+    "one": 1,
+    "two": 2
+  },
+  "result": {},
+  "tests": [
+    {
+      "with": {
+        "n": 0
+      },
+      "expect": 0
+    },
+    {
+      "with": {
+        "n": 1
+      },
+      "expect": 0
+    },
+    {
+      "with": {
+        "n": 2
+      },
+      "expect": 1
+    },
+    {
+      "with": {
+        "n": 9
+      },
+      "expect": 0
+    },
+    {
+      "with": {
+        "n": 13
+      },
+      "expect": 1
+    },
+    {
+      "with": {
+        "n": 97
+      },
+      "expect": 1
+    },
+    {
+      "with": {
+        "n": 221
+      },
+      "expect": 0
+    },
+    {
+      "with": {
+        "n": 251
+      },
+      "expect": 1
+    }
+  ]
+}

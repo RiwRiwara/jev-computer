@@ -1,11 +1,40 @@
 {
   "about": "Fibonacci numbers until the 8-bit adder overflows.",
   "code": [
-    "LDA 13", "OUT", "ADD 14", "JC 10", "STA 15",
-    "LDA 14", "STA 13", "LDA 15", "STA 14", "JMP 0", "HLT"
+    "loop: LDA x",
+    "OUT",
+    "ADD y",
+    "JC done",
+    "STA t",
+    "LDA y",
+    "STA x",
+    "LDA t",
+    "STA y",
+    "JMP loop",
+    "done: HLT"
   ],
-  "data": {"13": 0, "14": 1},
+  "data": {
+    "x": 0,
+    "y": 1,
+    "t": 0
+  },
   "tests": [
-    {"expect": [0, 1, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89, 144]}
+    {
+      "expect": [
+        0,
+        1,
+        1,
+        2,
+        3,
+        5,
+        8,
+        13,
+        21,
+        34,
+        55,
+        89,
+        144
+      ]
+    }
   ]
 }

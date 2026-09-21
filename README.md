@@ -8,14 +8,14 @@
 
 > *"Are both `a` and `b` equal to 1?"*
 
-Its answers to the four possible inputs become an AND gate, which is inverted to NAND. NAND is a universal gate, so 2,102 of them wired together make a working computer. Programs are plain JSON files.
+Its answers to the four possible inputs become an AND gate, which is inverted to NAND. NAND is a universal gate, so 24,511 of them wired together make a working computer with 256 bytes of RAM. It runs factorial, prime testing and bubble sort. Programs are plain JSON files.
 
 ```mermaid
 flowchart LR
     Q[Jev API call] --> T[NAND truth table]
     T --> FA[Full adder, 9 NAND gates]
     FA --> ALU[8-bit ALU]
-    ALU --> CPU[8-bit CPU and 16-byte RAM, 2102 NAND gates]
+    ALU --> CPU[8-bit CPU and 256-byte RAM, 24511 NAND gates]
     P[Program JSON] -->|loaded into RAM| CPU
     CPU -->|OUT| ANS[Answer]
 ```
@@ -25,25 +25,26 @@ flowchart LR
 Python 3.9+, standard library only.
 
 ```bash
-cp .env.example .env                          # add your TypeSafe API key
+cp .env.example .env                                  # add your TypeSafe API key
 
-python jev_run.py --selftest                  # check Jev's gate answers (5 requests)
-python jev_run.py programs/fib.json           # Fibonacci
-python jev_run.py programs/add.json a=40 b=3  # 40 + 3
-python jev_run.py programs/div.json a=200 b=7 # 200 ÷ 7
+python jev_run.py --selftest                          # check Jev's gate answers (5 requests)
+python jev_run.py programs/factorial.json n=5         # 120
+python jev_run.py programs/prime.json n=97            # 1 (prime)
+python jev_run.py programs/bubble_sort.json list=5,2,9,1,7,3
 ```
 
 ```
 $ python jev_run.py programs/mul.json a=7 b=6
-a x b by repeated addition (b is the loop count). No output means the product is over 255.
+a x b by repeated addition (b is the loop count). Answers overflow above 255.
 output port: [42]
 answer: 42
-jev: 1 request · 446 input tokens ($0.000019) · 0.9 s · 59 clock cycles · 124,018 gate evaluations
+jev: 1 request · 446 input tokens ($0.000019) · 0.9 s · 59 clock cycles · 1,446,149 gate evaluations
 ```
 
 | Option | What it does |
 |---|---|
 | `name=value` | Set one of the program's inputs (0–255) |
+| `name=4,7,9` | Set a list input |
 | `--trace` | Print every instruction the CPU runs |
 | `--test` | Run the tests written inside the program's JSON |
 | `--selftest` | Ask Jev the gate question 5 times and check every answer |
@@ -52,32 +53,32 @@ jev: 1 request · 446 input tokens ($0.000019) · 0.9 s · 59 clock cycles · 12
 
 | File | Does | Inputs | Example |
 |---|---|---|---|
-| `programs/add.json` | a + b (up to 510) | `a`, `b` | `a=255 b=255` → 510 |
-| `programs/sub.json` | a − b (can be negative) | `a`, `b` | `a=15 b=17` → −2 |
-| `programs/mul.json` | a × b (up to 255) | `a`, `b` | `a=7 b=6` → 42 |
-| `programs/div.json` | a ÷ b (whole number) | `a`, `b` | `a=200 b=7` → 28 |
-| `programs/countdown.json` | n, n−1, … 0 | `n` | `n=5` → 5 4 3 2 1 0 |
-| `programs/fib.json` | Fibonacci up to 144 | — | 0 1 1 2 … 144 |
-| `programs/gcd.json` | Greatest common divisor (Euclid) | `a`, `b` (1–255) | `a=48 b=18` → 6 |
-| `programs/max3.json` | Largest of three numbers | `a`, `b`, `c` | `a=7 b=42 c=19` → 42 |
-| `programs/linear_search.json` | Position of `x` in a list of 3 (3 = not found) | `a0`, `a1`, `a2`, `x` | `a0=4 a1=7 a2=9 x=7` → 1 |
-| `programs/pow2.json` | 2 to the power y (up to 128) | `y` | `y=5` → 32 |
-| `programs/sum_to_n.json` | 1 + 2 + … + n (up to 253) | `n` | `n=10` → 55 |
+| `add.json` | a + b (up to 510) | `a`, `b` | `a=255 b=255` → 510 |
+| `sub.json` | a − b (can be negative) | `a`, `b` | `a=15 b=17` → −2 |
+| `mul.json` | a × b | `a`, `b` | `a=7 b=6` → 42 |
+| `div.json` | a ÷ b (whole number) | `a`, `b` | `a=200 b=7` → 28 |
+| `power.json` | x to the power y (loop in a loop) | `x`, `y` | `x=3 y=5` → 243 |
+| `pow2.json` | 2 to the power y | `y` | `y=7` → 128 |
+| `factorial.json` | n! (loop in a loop) | `n` | `n=5` → 120 |
+| `sum_to_n.json` | 1 + 2 + … + n | `n` | `n=10` → 55 |
+| `gcd.json` | Greatest common divisor (Euclid) | `a`, `b` (1–255) | `a=48 b=18` → 6 |
+| `prime.json` | Is n prime? (1 = yes, 0 = no) | `n` | `n=251` → 1 |
+| `max_min.json` | Largest and smallest of 8 numbers | `list` (8) | `list=42,7,19,200,3,88,150,64` → [200, 3] |
+| `linear_search.json` | Position of `x` in 8 numbers | `list` (8), `x` | `x=42` → 5 |
+| `bubble_sort.json` | Sort 6 numbers | `list` (6) | `list=5,2,9,1,7,3` → [1, 2, 3, 5, 7, 9] |
+| `countdown.json` | n, n−1, … 0 | `n` | `n=5` → 5 4 3 2 1 0 |
+| `fib.json` | Fibonacci up to 144 | — | 0 1 1 2 … 144 |
 
-Every program's tests pass on real Jev: 42 of 42, using 42 requests and 18,732 input tokens.
+All files are in `programs/`. Every program's tests pass on real Jev: 65 of 65, using 65 requests and 28,990 input tokens.
 
-`linear_search` walks the list by rewriting its own `LDA` instruction on each loop (self-modifying code), because the CPU has no pointer instructions.
+`max_min`, `linear_search` and `bubble_sort` walk their lists by rewriting their own `LDA`/`STA` instructions (self-modifying code), because the CPU has no pointer instructions.
 
-### What doesn't fit yet
+### Using the programs well
 
-Code and data share **16 bytes** of RAM. Anything that needs a loop inside a loop runs out of room, because a nested multiply alone takes about 12 bytes. That rules out `factorial`, `prime` (trial division), general `x^y`, and `bubble_sort`. They would need a bigger machine, for example 8-bit addresses and 256 bytes of RAM, which means a new instruction format and a rebuilt `cpu.json`.
-
-### Using the arithmetic programs well
-
-- **Numbers are 8-bit (0–255).** Sums go to 510, because the carry comes out as a 9th bit. Differences can be negative. A product over 255 answers `overflow (> 255)`. Division gives the whole-number quotient.
-- **Never divide by 0.** The CPU would loop forever, so the runner stops after 4,000 clock cycles with an error.
-- **Put the smaller number in `b` for `mul`.** `b` is the loop count, so `a=200 b=1` takes 14 cycles while `a=1 b=200` takes about 1,800. Division takes about 8 cycles for each 1 in the quotient.
-- **Every run costs the same.** It's 1 request and 446 tokens (about $0.00002), however many clock cycles the program takes, because Jev answers the gate once and every gate reuses it.
+- **Numbers are 8-bit (0–255).** Sums go to 510, because the carry comes out as a 9th bit. Differences can be negative. Results over 255 from `mul`, `power`, `pow2`, `factorial` and `sum_to_n` answer `overflow (> 255)`. Division gives the whole-number quotient.
+- **Never divide by 0.** The CPU would loop forever, so the runner stops after 100,000 clock cycles with an error. `gcd` needs both numbers to be 1 or more for the same reason.
+- **Put the smaller number in `b` for `mul`.** `b` is the loop count: `a=200 b=1` takes 14 clock cycles, `a=1 b=200` takes 1,805. Division takes about 8 cycles for each 1 in the answer (`255 ÷ 1` takes 2,046).
+- **Every run costs the same.** It's 1 request and 446 tokens (about $0.00002), however long the program runs, because Jev answers the gate once and every gate reuses it. The longest test, `prime n=251`, runs 6,263 clock cycles (153 million gate evaluations) in about 5 seconds.
 - **Use `--trace` to see how the answer was made.** It prints every instruction the CPU runs and the value of A at each step.
 
 ## Write your own program
@@ -87,9 +88,9 @@ A program is one JSON file. Nothing else needs to change.
 ```json
 {
   "about": "Double a number: a + a.",
-  "inputs": {"a": 15},
-  "code": ["LDA 15", "ADD 15", "OUT", "HLT"],
-  "data": {"15": 21},
+  "inputs": ["a"],
+  "code": ["LDA a", "ADD a", "OUT", "HLT"],
+  "data": {"a": 21},
   "tests": [
     {"with": {"a": 21}, "expect": [42]},
     {"with": {"a": 100}, "expect": [200]}
@@ -104,18 +105,27 @@ python jev_run.py double.json --test   # 2/2 passed
 
 | Key | Meaning |
 |---|---|
-| `code` | Instructions, one per RAM address starting at 0 (see the instruction set below) |
-| `data` | Starting values for RAM addresses after the code, `{"address": value}` |
-| `inputs` | Names you can set from the command line, `{"name": address}` |
+| `code` | Instructions, in order. Start a line with `name:` to label it, for example `"loop: LDA n"`. |
+| `data` | Named variables, `{"n": 5}`, or lists, `{"list": [4, 7, 9]}`. They are placed in RAM right after the code. |
+| `inputs` | Which `data` names can be set from the command line or by tests |
 | `about` | One line printed before running |
-| `result` | *Optional.* How to read the output port. Leave it out to get the list of every `OUT`. `{}` means the first `OUT` is the answer. `"add": n` adds n to it. `"second_output_adds": 256` adds 256 if there is a second `OUT` (a carry flag). `"no_output": "text"` is the answer when nothing was output. |
+| `result` | *Optional.* How to read the output port (see below) |
 | `tests` | *Optional.* `{"with": {inputs}, "expect": answer}` cases, used by `--test` |
 
-Rules: code and data share 16 bytes of RAM, and data can't overlap the code. Values are 0–255. The program must end with `HLT`.
+An operand can be a number (`LDI 5`), a label or data name (`JMP loop`, `LDA n`), or a name plus or minus a number (`LDA list+2`, `STA get+1`). With `LDI`, a name gives its address, so `LDI list` puts the list's address into A.
+
+`result` options:
+- Leave it out to get the list of every `OUT`.
+- `{}` means the first `OUT` is the answer.
+- `"add": n` adds n to the answer.
+- `"second_output_adds": 256` adds 256 if there is a second `OUT` (a carry flag).
+- `"no_output": "text"` is the answer when nothing was output.
+
+Rules: code and data share 256 bytes of RAM (each instruction takes 2). Values are 0–255. The program must reach `HLT`.
 
 ### Instruction set
 
-8-bit accumulator machine with 16 bytes of RAM. Each byte is `[opcode:4][address:4]`.
+8-bit accumulator machine with 256 bytes of RAM. Every instruction is 2 bytes, `[opcode] [operand]`, and the PC moves forward by 2.
 
 | Instruction | Meaning |
 |---|---|
@@ -123,7 +133,7 @@ Rules: code and data share 16 bytes of RAM, and data can't overlap the code. Val
 | `ADD n` | A = A + RAM[n], carry = 1 if it went over 255 |
 | `SUB n` | A = A − RAM[n], carry = 1 if **no** borrow |
 | `STA n` | RAM[n] = A |
-| `LDI n` | A = n (0–15) |
+| `LDI n` | A = n (0–255) |
 | `JMP n` | jump to address n |
 | `JZ n` | jump if A = 0 |
 | `JC n` | jump if carry = 1 |
@@ -136,13 +146,13 @@ Rules: code and data share 16 bytes of RAM, and data can't overlap the code. Val
 | Run | Result | Requests | Input tokens | Time |
 |---|---|---:|---:|---:|
 | Gate selftest, 5 repeats × 4 cases | 20/20 correct, p = 0.00–0.01 / 0.99 | 5 | 2,230 | — |
-| All program tests (11 programs) | 42/42 passed | 42 | 18,732 | ~35 s |
+| All program tests (15 programs) | 65/65 passed | 65 | 28,990 | ~63 s |
 
 ## How it works
 
 1. **The gate.** One request carries four Noul questions, one per input case. Jev returns P(yes). `p ≥ 0.5` is AND = 1, and inverting that gives NAND.
-2. **The circuit.** `build_cpu.py` builds the whole machine out of NAND only: instruction decoder, 8-bit ALU, carry and zero flags, program counter, jumps, 16-byte RAM read/write. It writes the netlist, plus the instruction set, to `cpu.json`.
-3. **The runner.** `jev_run.py` loads a program JSON into RAM and asks Jev the 4 gate cases in one request. It then evaluates the netlist level by level using Jev's answers, and latches the next state on each clock tick.
+2. **The circuit.** `build_cpu.py` builds the whole machine out of NAND only: instruction decoder, 8-bit ALU, carry and zero flags, program counter, jumps, and 256 bytes of RAM with three read ports (instruction, operand, data) and a write port. It writes the netlist, plus the instruction set, to `cpu.json`.
+3. **The runner.** `jev_run.py` assembles a program JSON into RAM and asks Jev the 4 gate cases in one request. It then evaluates all 24,511 gates on every clock tick using Jev's answers, and latches the next state.
 
 ### Inside the CPU
 
@@ -150,14 +160,14 @@ Every box below is built only from NAND gates, and every NAND gate takes its out
 
 ```mermaid
 flowchart LR
-    PC[PC] -->|address| RAM[RAM, 16 bytes]
+    PC[PC] -->|address| RAM[RAM, 256 bytes]
     RAM -->|instruction| DEC[Instruction decoder]
     RAM -->|operand| ALU[ALU, add and subtract]
     A[Register A] --> ALU
     DEC -->|ADD, SUB| ALU
     ALU --> A
     ALU --> C[Carry flag]
-    DEC -->|JMP, JZ, JC| NPC[Next PC, plus 1 or jump]
+    DEC -->|JMP, JZ, JC| NPC[Next PC, plus 2 or jump]
     A -->|is zero| NPC
     C --> NPC
     NPC --> PC
@@ -174,11 +184,11 @@ sequenceDiagram
     participant J as Jev API
     participant C as cpu.json
     U->>R: programs/add.json a=40 b=3
-    R->>R: Assemble code and inputs into RAM
+    R->>R: Assemble code and data into RAM
     R->>J: One request with 4 gate questions
     J-->>R: Answers 0.00, 0.01, 0.01, 0.99
     loop Every clock cycle until HLT
-        R->>C: Evaluate 59 levels with Jev answers
+        R->>C: Evaluate 24511 gates with Jev answers
         C-->>R: Next PC, A, carry, RAM, OUT
     end
     R-->>U: Answer 43, 446 tokens, 5 clock cycles
@@ -187,17 +197,17 @@ sequenceDiagram
 | Jev: all the logic | Code: no logic |
 |---|---|
 | Decides what a gate outputs (the NAND truth table) | Holds register and RAM bits (flip-flops) |
-| Every add, subtract, carry, decode, jump and RAM access comes from those answers through 2,102 gates | Ticks the clock and routes bits along the wires in `cpu.json` |
+| Every add, subtract, carry, decode, jump and RAM access comes from those answers through 24,511 gates | Ticks the clock and routes bits along the wires in `cpu.json` |
 | If Jev answered wrong, the machine would compute wrong. There is no fallback. | Converts bits to decimal and reads the `result` rule |
 
 ## Files
 
-| File | What it is |
-|---|---|
-| `jev_run.py` | The runner: loads a program JSON, asks Jev, runs the clock |
-| `programs/*.json` | 11 programs: add, sub, mul, div, gcd, max3, linear_search, pow2, sum_to_n, countdown, fib |
-| `cpu.json` | The machine: 2,102 NAND gates + instruction set (generated) |
-| `build_cpu.py` | Builds `cpu.json` from NAND gates; `--check` verifies it (no API) |
+| File | What it is | When you need it |
+|---|---|---|
+| `jev_run.py` | The runner: assembles a program JSON, asks Jev once, runs the clock | Every time you run something |
+| `programs/*.json` | The 15 programs | Add a file here to add a program |
+| `cpu.json` | The machine: 24,511 NAND gates and the instruction set (generated) | Read by `jev_run.py` |
+| `build_cpu.py` | Builds `cpu.json` from NAND gates; `--check` verifies it without the API | Only if you change the machine's design |
 
 ## What this is (and isn't)
 

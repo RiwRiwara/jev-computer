@@ -1,25 +1,38 @@
 {
-  "about": "1 + 2 + ... + n. Answers overflow above 255 (n > 22).",
+  "about": "n! = 1 x 2 x ... x n, multiplying by repeated addition (a loop inside a loop). Answers overflow above 255 (n > 5).",
   "inputs": [
     "n"
   ],
   "code": [
     "loop: LDA n",
     "JZ done",
-    "ADD s",
+    "STA k",
+    "LDI 0",
+    "STA t",
+    "inner: LDA t",
+    "ADD r",
     "JC over",
-    "STA s",
+    "STA t",
+    "LDA k",
+    "SUB one",
+    "STA k",
+    "JZ next",
+    "JMP inner",
+    "next: LDA t",
+    "STA r",
     "LDA n",
     "SUB one",
     "STA n",
     "JMP loop",
-    "done: LDA s",
+    "done: LDA r",
     "OUT",
     "over: HLT"
   ],
   "data": {
-    "n": 10,
-    "s": 0,
+    "n": 5,
+    "r": 1,
+    "k": 0,
+    "t": 0,
     "one": 1
   },
   "result": {
@@ -30,7 +43,7 @@
       "with": {
         "n": 0
       },
-      "expect": 0
+      "expect": 1
     },
     {
       "with": {
@@ -40,19 +53,19 @@
     },
     {
       "with": {
-        "n": 10
+        "n": 3
       },
-      "expect": 55
+      "expect": 6
     },
     {
       "with": {
-        "n": 22
+        "n": 5
       },
-      "expect": 253
+      "expect": 120
     },
     {
       "with": {
-        "n": 23
+        "n": 6
       },
       "expect": "overflow (> 255)"
     }

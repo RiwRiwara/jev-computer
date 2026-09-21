@@ -1,0 +1,127 @@
+{
+  "about": "Largest and smallest of a list of 8 numbers. Prints max, then min. Walks the list by rewriting its own LDA instruction.",
+  "inputs": [
+    "list"
+  ],
+  "code": [
+    "LDA list",
+    "STA max",
+    "STA min",
+    "loop: LDA count",
+    "JZ done",
+    "SUB one",
+    "STA count",
+    "LDA get+1",
+    "ADD one",
+    "STA get+1",
+    "get: LDA list",
+    "STA x",
+    "SUB max",
+    "JC new_max",
+    "LDA x",
+    "SUB min",
+    "JC loop",
+    "LDA x",
+    "STA min",
+    "JMP loop",
+    "new_max: LDA x",
+    "STA max",
+    "JMP loop",
+    "done: LDA max",
+    "OUT",
+    "LDA min",
+    "OUT",
+    "HLT"
+  ],
+  "data": {
+    "list": [
+      42,
+      7,
+      19,
+      200,
+      3,
+      88,
+      150,
+      64
+    ],
+    "count": 7,
+    "one": 1,
+    "x": 0,
+    "max": 0,
+    "min": 0
+  },
+  "tests": [
+    {
+      "with": {
+        "list": [
+          42,
+          7,
+          19,
+          200,
+          3,
+          88,
+          150,
+          64
+        ]
+      },
+      "expect": [
+        200,
+        3
+      ]
+    },
+    {
+      "with": {
+        "list": [
+          5,
+          5,
+          5,
+          5,
+          5,
+          5,
+          5,
+          5
+        ]
+      },
+      "expect": [
+        5,
+        5
+      ]
+    },
+    {
+      "with": {
+        "list": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          255
+        ]
+      },
+      "expect": [
+        255,
+        0
+      ]
+    },
+    {
+      "with": {
+        "list": [
+          255,
+          254,
+          1,
+          2,
+          128,
+          0,
+          9,
+          10
+        ]
+      },
+      "expect": [
+        255,
+        0
+      ]
+    }
+  ]
+}
