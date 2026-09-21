@@ -10,9 +10,17 @@
 
 Its answers to the four possible inputs become an AND gate, which is inverted to NAND. NAND is a universal gate, so 2,102 of them wired together make a working computer. Programs are plain JSON files.
 
-```
-one Jev API call ──► NAND truth table ──► full adder (9 NANDs) ──► ALU ──► 8-bit CPU + RAM
-   446 tokens          p = .00 .01 .01 .99       2,102 NAND gates, 59 levels deep
+```mermaid
+flowchart LR
+    Q["Jev API call<br/>'Are both a and b equal to 1?'<br/>1 request · 446 tokens"]
+    T["NAND truth table<br/>p = .00 · .01 · .01 · .99"]
+    FA["Full adder<br/>9 NAND gates"]
+    ALU["8-bit ALU"]
+    CPU["8-bit CPU + 16-byte RAM<br/>2,102 NAND gates · 59 levels"]
+    P["programs/*.json"]
+    Q --> T --> FA --> ALU --> CPU
+    P -- "loaded into RAM" --> CPU
+    CPU -- "OUT" --> A["answer"]
 ```
 
 ## Quick start
@@ -41,8 +49,6 @@ jev: 1 request · 446 input tokens ($0.000019) · 0.9 s · 59 clock cycles · 12
 | `name=value` | Set one of the program's inputs (0–255) |
 | `--trace` | Print every instruction the CPU runs |
 | `--test` | Run the tests written inside the program's JSON |
-| `--sim` | Ideal gates, no API (free, for trying things) |
-| `--live` | Re-ask Jev at every circuit level on every clock cycle (slow, see below) |
 | `--selftest` | Ask Jev the gate question 5 times and check every answer |
 
 ## Programs
@@ -63,9 +69,8 @@ Every program's tests pass on real Jev: 19 of 19, using 19 requests and 8,474 in
 - **Numbers are 8-bit (0–255).** Sums go to 510, because the carry comes out as a 9th bit. Differences can be negative. A product over 255 answers `overflow (> 255)`. Division gives the whole-number quotient.
 - **Never divide by 0.** The CPU would loop forever, so the runner stops after 4,000 clock cycles with an error.
 - **Put the smaller number in `b` for `mul`.** `b` is the loop count, so `a=200 b=1` takes 14 cycles while `a=1 b=200` takes about 1,800. Division takes about 8 cycles for each 1 in the quotient.
-- **Fast mode costs the same for any program.** It's 1 request and 446 tokens, because Jev answers the gate once and every gate reuses it.
-- **In `--live` mode, cycles cost money and time.** Each clock cycle is 59 requests and about 49 s. `add a=40 b=3` took 5 cycles, 295 requests and 245 s. A `mul` or `div` run would take hours, so use `add` or `sub` for live demos.
-- **Try with `--sim` first, then run on Jev.** Use `--trace` to see how the answer was made.
+- **Every run costs the same.** It's 1 request and 446 tokens (about $0.00002), however many clock cycles the program takes, because Jev answers the gate once and every gate reuses it.
+- **Use `--trace` to see how the answer was made.** It prints every instruction the CPU runs and the value of A at each step.
 
 ## Write your own program
 
@@ -123,18 +128,63 @@ Rules: code and data share 16 bytes of RAM, and data can't overlap the code. Val
 | Run | Result | Requests | Input tokens | Time |
 |---|---|---:|---:|---:|
 | Gate selftest, 5 repeats × 4 cases | 20/20 correct, p = 0.00–0.01 / 0.99 | 5 | 2,230 | — |
-| All program tests (fast mode) | 19/19 passed | 19 | 8,474 | ~15 s |
-| `add a=40 b=3` **live** (Jev asked at every level, every clock) | 43 | 295 | 112,441 | 245 s |
-| Countdown **live** (older 1-case-per-request prompt) | 5 4 3 2 1 0 | 3,642 | not measured | 1,175 s |
+| All program tests | 19/19 passed | 19 | 8,474 | ~15 s |
 
 ## How it works
 
 1. **The gate.** One request carries four Noul questions, one per input case. Jev returns P(yes). `p ≥ 0.5` is AND = 1, and inverting that gives NAND.
 2. **The circuit.** `build_cpu.py` builds the whole machine out of NAND only: instruction decoder, 8-bit ALU, carry and zero flags, program counter, jumps, 16-byte RAM read/write. It writes the netlist, plus the instruction set, to `cpu.json`.
-3. **The runner.** `jev_run.py` loads a program JSON into RAM, then evaluates the netlist level by level using Jev's answers and latches the next state on each clock tick.
-4. **Two modes.**
-   - *fast* (default): Jev answers the 4 cases once per run, and every gate uses those answers.
-   - *live*: every circuit level re-asks Jev on every clock cycle, to show Jev really is in the loop.
+3. **The runner.** `jev_run.py` loads a program JSON into RAM and asks Jev the 4 gate cases in one request. It then evaluates the netlist level by level using Jev's answers, and latches the next state on each clock tick.
+
+### Inside the CPU
+
+Every box below is built only from NAND gates, and every NAND gate takes its output from Jev's answers.
+
+```mermaid
+flowchart LR
+    RAM["RAM<br/>16 bytes"]
+    DEC["Instruction decoder"]
+    ALU["ALU<br/>add / subtract"]
+    A["Register A"]
+    C["Carry flag"]
+    PCL["Next PC<br/>+1 or jump"]
+    PC["PC"]
+    OUT["Output port"]
+
+    PC -- "address" --> RAM
+    RAM -- "instruction" --> DEC
+    RAM -- "operand" --> ALU
+    A --> ALU
+    DEC -- "ADD / SUB" --> ALU
+    ALU --> A
+    ALU --> C
+    DEC -- "JMP / JZ / JC" --> PCL
+    A -- "zero?" --> PCL
+    C --> PCL
+    PCL --> PC
+    A -- "STA" --> RAM
+    A -- "OUT" --> OUT
+```
+
+### One run, step by step
+
+```mermaid
+sequenceDiagram
+    participant You
+    participant R as jev_run.py
+    participant J as Jev API
+    participant C as cpu.json<br/>2,102 NAND gates
+
+    You->>R: programs/add.json a=40 b=3
+    R->>R: assemble code + inputs into RAM
+    R->>J: 1 request, 4 questions (one per gate case)
+    J-->>R: p(yes) = .00 · .01 · .01 · .99
+    loop every clock cycle until HLT
+        R->>C: evaluate 59 levels using Jev's answers
+        C-->>R: next PC, A, carry, RAM, OUT
+    end
+    R-->>You: answer: 43 · 446 tokens · 5 clock cycles
+```
 
 | Jev: all the logic | Code: no logic |
 |---|---|

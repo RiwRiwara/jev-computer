@@ -9,8 +9,6 @@ Programs are JSON files in programs/ (see README for the format).
     python jev_run.py programs/add.json a=40 b=3        # set the program's inputs
     python jev_run.py programs/add.json a=40 b=3 --trace   # show every instruction
     python jev_run.py programs/add.json --test          # run the tests inside the JSON
-    python jev_run.py programs/fib.json --sim           # ideal gates, no API
-    python jev_run.py programs/add.json --live          # re-ask Jev at every circuit level (slow)
     python jev_run.py --selftest                        # check the gate answers, 5 requests
 """
 import json, os, sys, time, urllib.request, urllib.error
@@ -81,18 +79,13 @@ def ask_gates(m, cases, st):
 
 # ───────────────────────────── the circuit ─────────────────────────────
 
-def run(m, init, live=False, sim=False, max_cycles=4000, on_cycle=None):
+def run(m, init, max_cycles=4000, on_cycle=None):
     """Run the circuit from `init` register values until its halt bit.
-    fast (default): one request asks Jev all 4 gate cases; every gate uses those answers.
-    live: one request per circuit level, every clock, for the cases at that level.
+    One request asks Jev all 4 gate cases; every gate in the machine uses those answers.
     Returns (displayed values, Stats)."""
     st = Stats()
     yes = m["gate"]["bit_if_yes"]
-    to_bit = lambda p: yes if p >= 0.5 else 1 - yes
-    if sim:
-        table = {ab: yes ^ (1 - (ab[0] & ab[1])) for ab in ALL_CASES}
-    elif not live:
-        table = {ab: to_bit(p) for ab, p in ask_gates(m, ALL_CASES, st).items()}
+    table = {ab: yes if p >= 0.5 else 1 - yes for ab, p in ask_gates(m, ALL_CASES, st).items()}
 
     bits = [(init.get(r, 0) >> i) & 1 for r, w in m["registers"] for i in range(w)]
     num = lambda v, nodes: sum(v[n] << i for i, n in enumerate(nodes))
@@ -103,9 +96,6 @@ def run(m, init, live=False, sim=False, max_cycles=4000, on_cycle=None):
         v, g = bits + [0] * len(m["gates"]), len(bits)
         for size in m["level_sizes"]:  # gates in one level don't depend on each other
             level = m["gates"][g - len(bits):g - len(bits) + size]
-            if live and not sim:
-                pats = sorted({(v[x], v[y]) for x, y in level})
-                table = {ab: to_bit(p) for ab, p in ask_gates(m, pats, st).items()}
             for i, (x, y) in enumerate(level): v[g + i] = table[(v[x], v[y])]
             g += size
         st.cycles += 1
@@ -162,30 +152,28 @@ def disasm(m, byte):
     return name if name in ("NOP", "OUT", "HLT") else f"{name} {byte & ((1 << bits) - 1)}"
 
 
-def execute(m, prog, inputs, sim=False, live=False, trace=False):
+def execute(m, prog, inputs, trace=False):
     def show(cycle, regs, shown, st):
         ins = disasm(m, regs[f"{m['isa']['memory']}{regs['pc']}"])
         print(f"  {cycle:5d}  pc={regs['pc']:2d}  {ins:<7} A={regs['a']:3d} C={regs['c']}"
               + (f"   ▶ OUT {shown}" if shown is not None and ins != "HLT" else ""))
-    out, st = run(m, assemble(m, prog, inputs), sim=sim, live=live, on_cycle=show if trace else None)
+    out, st = run(m, assemble(m, prog, inputs), on_cycle=show if trace else None)
     return read_result(prog, out), out, st
 
 
-def usage(st, sim):
-    if sim:
-        return f"ideal gates (no API) · {st.cycles:,} clock cycles · {st.gate_evals:,} gate evaluations"
+def usage(st):
     return (f"jev: {st.requests} request{'s' * (st.requests != 1)} · {st.input_tokens:,} input tokens "
             f"(${st.input_tokens / 1e6 * PRICE_PER_MTOK:.6f}) · {st.seconds:.1f} s · "
             f"{st.cycles:,} clock cycles · {st.gate_evals:,} gate evaluations")
 
 
-def test(m, prog, sim, live):
+def test(m, prog):
     tests, bad, requests, tokens, t0 = prog.get("tests", []), 0, 0, 0, time.time()
     if not tests:
         sys.exit("this program has no \"tests\" in its JSON")
     for case in tests:
         inputs = case.get("with", {})
-        answer, _, st = execute(m, prog, inputs, sim=sim, live=live)
+        answer, _, st = execute(m, prog, inputs)
         ok = answer == case["expect"]
         bad += not ok
         requests += st.requests
@@ -220,9 +208,11 @@ def main():
     flags = {a for a in sys.argv[1:] if a.startswith("--")}
     args = [a for a in sys.argv[1:] if not a.startswith("--")]
     m = load(os.path.join(HERE, "cpu.json"))
-    sim, live = "--sim" in flags, "--live" in flags
-    if not sim and not os.environ.get("TYPESAFE_API_KEY"):
-        sys.exit("TYPESAFE_API_KEY not found — put it in .env, or use --sim")
+    unknown = flags - {"--trace", "--test", "--selftest"}
+    if unknown:
+        sys.exit(f"unknown option {', '.join(sorted(unknown))} — options are --trace, --test, --selftest")
+    if not os.environ.get("TYPESAFE_API_KEY"):
+        sys.exit("TYPESAFE_API_KEY not found — put it in .env")
     if "--selftest" in flags:
         sys.exit(0 if selftest(m, 5) else 1)
     if not args:
@@ -239,14 +229,14 @@ def main():
         print(prog["about"])
     try:
         if "--test" in flags:
-            sys.exit(0 if test(m, prog, sim, live) else 1)
-        answer, out, st = execute(m, prog, inputs, sim=sim, live=live, trace="--trace" in flags)
+            sys.exit(0 if test(m, prog) else 1)
+        answer, out, st = execute(m, prog, inputs, trace="--trace" in flags)
     except (ValueError, RuntimeError) as e:
         sys.exit(f"error: {e}")
     if prog.get("result") is not None:
         print(f"output port: {out}")
     print(f"answer: {answer}")
-    print(usage(st, sim))
+    print(usage(st))
 
 
 if __name__ == "__main__":
