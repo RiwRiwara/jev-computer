@@ -12,14 +12,19 @@ Programs are JSON files in programs/ (see README for the format).
     python jev_run.py programs/add.json --test          # run the tests inside the JSON
     python jev_run.py --selftest                        # check the gate answers, 5 requests
     python jev_run.py programs/add.json --cpu=mini      # pick a CPU model from cpus/
+    python jev_run.py programs/add.json a=40 b=3 --live # ask Jev at every circuit level, every clock (slow)
 
 Programs inside cpus/<model>/programs/ run on that model automatically.
 """
-import json, os, re, sys, time, urllib.request, urllib.error
+import json, os, re, sys, threading, time, urllib.request, urllib.error
+from concurrent.futures import ThreadPoolExecutor
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 PRICE_PER_MTOK = 0.042  # jev-1.13 input price
 ALL_CASES = [(0, 0), (0, 1), (1, 0), (1, 1)]
+LIVE_MAX_CYCLES = 12        # --live is for short programs like add and sub (5–7 clock cycles)
+LIVE_GATES_PER_REQUEST = 100  # measured: 100 gates per request stay sharp (worst error 0.06)
+POOL = ThreadPoolExecutor(8)
 
 
 def load_env():  # read KEY=VALUE lines from .env next to this script (no dependency)
@@ -42,55 +47,95 @@ class Stats:
     def __init__(self):
         self.requests = self.input_tokens = self.output_tokens = 0
         self.cycles = self.gate_evals = 0
+        self.gate_answers = self.unsure = self.off = 0  # --live: per-gate answers from Jev
         self.api_seconds = 0.0
         self.started = time.time()
         self.answers = {}  # (a, b) -> last p(yes) Jev gave for that gate case
+        self.lock = threading.Lock()
 
     @property
     def seconds(self):
         return time.time() - self.started
 
 
-def ask_gates(m, cases, st):
-    """One Jev request: one Noul per gate case. Returns {(a, b): p(yes)}."""
-    ids = {f"g{a}{b}": (a, b) for a, b in cases}
-    body = json.dumps({
-        "model": m["model"],
-        "state": {k: {"a": a, "b": b} for k, (a, b) in ids.items()},
-        "questions": {k: {"type": "noul", "instructions": m["gate"]["instructions"].format(id=k)}
-                      for k in ids},
-    }).encode()
+def post(m, questions, state, st):
+    """One Jev request. Returns {question id: p(yes)}."""
+    body = json.dumps({"model": m["model"], "state": state, "questions": questions}).encode()
     for t in range(6):
         t0 = time.time()
         try:
             req = urllib.request.Request(m["api"], body, {"Content-Type": "application/json",
                   "Authorization": "Bearer " + os.environ["TYPESAFE_API_KEY"]})
-            r = json.load(urllib.request.urlopen(req, timeout=60))
+            r = json.load(urllib.request.urlopen(req, timeout=120))
             break
         except urllib.error.URLError as e:  # retry 429 / 5xx / network, fail on other 4xx
             if getattr(e, "code", 500) < 500 and e.code != 429:
                 raise RuntimeError(f"API {e.code}: {e.read()[:200]}")
             time.sleep(2 ** t)
     else: raise RuntimeError("API unreachable after retries")
-    st.requests += 1
-    st.api_seconds += time.time() - t0
-    st.input_tokens += r.get("usage", {}).get("input_tokens", 0)
-    st.output_tokens += r.get("usage", {}).get("output_tokens", 0)
-    ps = {ids[k]: a["noul"] for k, a in r["answers"].items()}
+    with st.lock:
+        st.requests += 1
+        st.api_seconds += time.time() - t0
+        st.input_tokens += r.get("usage", {}).get("input_tokens", 0)
+        st.output_tokens += r.get("usage", {}).get("output_tokens", 0)
+    return {k: a["noul"] for k, a in r["answers"].items()}
+
+
+def gate_questions(m, pairs, ids):
+    state = {k: {"a": a, "b": b} for k, (a, b) in zip(ids, pairs)}
+    questions = {k: {"type": "noul", "instructions": m["gate"]["instructions"].format(id=k)} for k in ids}
+    return questions, state
+
+
+def ask_gates(m, cases, st):
+    """One Jev request: one Noul per gate case. Returns {(a, b): p(yes)}."""
+    ids = [f"g{a}{b}" for a, b in cases]
+    ps = post(m, *gate_questions(m, cases, ids), st)
+    ps = {ab: ps[k] for ab, k in zip(cases, ids)}
     st.answers.update(ps)
+    return ps
+
+
+def ask_each(m, pairs, st):
+    """--live: one Jev request, one Noul per gate (each gate asked on its own). Returns p(yes) per gate."""
+    ids = [f"g{i}" for i in range(len(pairs))]
+    got = post(m, *gate_questions(m, pairs, ids), st)
+    ps = [got[k] for k in ids]
+    with st.lock:  # bookkeeping only: how sharp Jev was, and whether it matched a real AND gate
+        st.gate_answers += len(ps)
+        st.unsure += sum(0.2 < p < 0.8 for p in ps)
+        st.off += sum((p >= 0.5) != bool(a & b) for p, (a, b) in zip(ps, pairs))
     return ps
 
 
 # ───────────────────────────── the circuit ─────────────────────────────
 
-def run(m, init, max_cycles=100_000, on_cycle=None):
+def levels(m):
+    """Split the gate list (stored in dependency order) into levels of independent gates."""
+    depth = [0] * sum(w for _, w in m["registers"])
+    sizes = []
+    for x, y in m["gates"]:
+        d = 1 + max(depth[x], depth[y])
+        depth.append(d)
+        if len(sizes) < d: sizes.append(0)
+        sizes[d - 1] += 1
+    return sizes
+
+
+def run(m, init, max_cycles=100_000, on_cycle=None, live=False):
     """Run the circuit from `init` register values until its halt bit.
-    One request asks Jev all 4 gate cases; every gate in the machine uses those answers.
+    Normal: one request asks Jev all 4 gate cases; every gate in the machine uses those answers.
+    live: every gate is asked on its own, on every clock cycle (100 gates per request,
+          the requests for one circuit level sent in parallel).
     Returns (displayed values, Stats)."""
     st = Stats()
     yes = m["gate"]["bit_if_yes"]
-    answers = ask_gates(m, ALL_CASES, st)
-    table = [yes if answers[ab] >= 0.5 else 1 - yes for ab in ALL_CASES]  # index = 2a + b
+    to_bit = lambda p: yes if p >= 0.5 else 1 - yes
+    if live:
+        max_cycles, sizes = min(max_cycles, LIVE_MAX_CYCLES), levels(m)
+    else:
+        answers = ask_gates(m, ALL_CASES, st)
+        table = [to_bit(answers[ab]) for ab in ALL_CASES]  # index = 2a + b
 
     bits = [(init.get(r, 0) >> i) & 1 for r, w in m["registers"] for i in range(w)]
     num = lambda v, nodes: sum(v[n] << i for i, n in enumerate(nodes))
@@ -99,8 +144,18 @@ def run(m, init, max_cycles=100_000, on_cycle=None):
     gates, show, out = m["gates"], m["display"]["show"], []
     for cycle in range(max_cycles):
         v = list(bits)
-        for x, y in gates:  # gates are stored in dependency order
-            v.append(table[2 * v[x] + v[y]])
+        if live:
+            g = 0
+            for size in sizes:  # each level: every gate is its own question to Jev
+                pairs = [(v[x], v[y]) for x, y in gates[g:g + size]]
+                chunks = [pairs[i:i + LIVE_GATES_PER_REQUEST]
+                          for i in range(0, len(pairs), LIVE_GATES_PER_REQUEST)]
+                for ps in POOL.map(lambda c: ask_each(m, c, st), chunks):
+                    v.extend(to_bit(p) for p in ps)
+                g += size
+        else:
+            for x, y in gates:  # gates are stored in dependency order
+                v.append(table[2 * v[x] + v[y]])
         st.cycles += 1
         st.gate_evals += len(gates)
         shown = num(v, show) if v[m["display"]["when"]] else None
@@ -108,6 +163,9 @@ def run(m, init, max_cycles=100_000, on_cycle=None):
         if v[m["halt"]]: return out, st
         if shown is not None: out.append(shown)
         bits = [v[n] for n in m["next"]]  # clock edge
+    if live:
+        raise RuntimeError(f"--live stops after {LIVE_MAX_CYCLES} clock cycles, and this program needs more. "
+                           f"Use it with short programs like add or sub.")
     raise RuntimeError(f"no HLT after {max_cycles:,} clock cycles — does the program loop forever? (e.g. dividing by 0)")
 
 
@@ -178,14 +236,20 @@ def disasm(m, op, arg):
     return name if name in ("NOP", "OUT", "HLT") else f"{name} {arg}"
 
 
-def execute(m, prog, inputs, trace=False):
+def execute(m, prog, inputs, trace=False, live=False):
     mem, words = m["isa"]["memory"], m["isa"]["words"]
     def show(cycle, regs, shown, st):
         pc = regs["pc"]
         ins = disasm(m, regs[f"{mem}{pc}"], regs[f"{mem}{(pc + 1) % words}"])
         print(f"  {cycle:6d}  pc={pc:3d}  {ins:<8} A={regs['a']:3d} C={regs['c']}"
               + (f"   ▶ OUT {shown}" if shown is not None and ins != "HLT" else ""))
-    out, st = run(m, assemble(m, prog, inputs), on_cycle=show if trace else None)
+    def progress(cycle, regs, shown, st):
+        if trace:
+            show(cycle, regs, shown, st)
+        else:
+            print(f"  clock cycle {cycle + 1}: {st.requests:,} Jev requests so far · {st.seconds:.0f} s", flush=True)
+    on_cycle = progress if live else (show if trace else None)
+    out, st = run(m, assemble(m, prog, inputs), on_cycle=on_cycle, live=live)
     return read_result(prog, out), out, st
 
 
@@ -254,9 +318,14 @@ def main():
     load_env()
     flags = {a for a in sys.argv[1:] if a.startswith("--")}
     args = [a for a in sys.argv[1:] if not a.startswith("--")]
-    unknown = {f for f in flags if f not in ("--trace", "--test", "--selftest") and not f.startswith("--cpu=")}
+    unknown = {f for f in flags if f not in ("--trace", "--test", "--selftest", "--live")
+               and not f.startswith("--cpu=")}
     if unknown:
-        sys.exit(f"unknown option {', '.join(sorted(unknown))} — options are --trace, --test, --selftest, --cpu=NAME")
+        sys.exit(f"unknown option {', '.join(sorted(unknown))} — "
+                 f"options are --trace, --test, --selftest, --live, --cpu=NAME")
+    live = "--live" in flags
+    if live and "--test" in flags:
+        sys.exit("--live can't be combined with --test; run one short program at a time")
     m = load(machine_path(flags, args[0] if args else None))
     if not os.environ.get("TYPESAFE_API_KEY"):
         sys.exit("TYPESAFE_API_KEY not found — put it in .env")
@@ -274,16 +343,25 @@ def main():
         inputs[k] = [int(x) for x in v.split(",")] if "," in v else int(v)
     if prog.get("about"):
         print(prog["about"])
+    if live:
+        sizes = levels(m)
+        per_cycle = sum(-(-n // LIVE_GATES_PER_REQUEST) for n in sizes)
+        print(f"--live: Jev answers every one of the {len(m['gates']):,} gates on every clock cycle — "
+              f"about {per_cycle} requests and {len(m['gates']) * 49 / 1e6 * PRICE_PER_MTOK:.3f} USD per cycle, "
+              f"{len(sizes)} levels in a row. Stops after {LIVE_MAX_CYCLES} cycles.")
     try:
         if "--test" in flags:
             sys.exit(0 if test(m, prog) else 1)
-        answer, out, st = execute(m, prog, inputs, trace="--trace" in flags)
+        answer, out, st = execute(m, prog, inputs, trace="--trace" in flags, live=live)
     except (ValueError, RuntimeError) as e:
         sys.exit(f"error: {e}")
     if prog.get("result") is not None:
         print(f"output port: {out}")
     print(f"answer: {answer}")
     print(usage(st, m))
+    if live:
+        print(f"live: {st.gate_answers:,} gate answers from Jev · {st.unsure} unsure (0.2–0.8) · "
+              f"{st.off} different from a real NAND gate")
 
 
 if __name__ == "__main__":
