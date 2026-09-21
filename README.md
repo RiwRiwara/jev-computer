@@ -20,6 +20,33 @@ flowchart LR
     CPU -->|OUT| ANS[Answer]
 ```
 
+## The idea: start from 0 and 1
+
+It didn't start as a computer. It started as a question: **can Jev add numbers?**
+
+1. **Asking directly wobbles.** One digit of `7 + 8` came back right with 98% confidence, but the carry ("does this column carry 1?") came back at only 88%, for a sum as easy as 15. One wrong carry spreads into every column after it. Questions that need several steps of thinking are where Jev gets unsure.
+2. **So shrink the question until it can't be ambiguous.** The smallest question in computing is about two bits: *"Are both `a` and `b` equal to 1?"* There are only four possible inputs, so all four can be tested. Jev answers 0.99 for (1, 1) and 0.00–0.01 for the other three, every time.
+3. **That answer is a logic gate.** "Both are 1" is AND. Flip it and you get NAND, and NAND is *universal*: every digital circuit, including a whole computer, can be built from NAND alone.
+4. **Then build back up, one layer at a time.** Each layer uses only the one below it:
+
+| Layer | Built from | Size |
+|---|---|---|
+| One question to Jev | 4 yes/no answers | 1 API request, 446 tokens |
+| NAND gate | Jev's answers | 1 gate |
+| Full adder (adds 3 bits) | NAND gates | 9 gates |
+| 8-bit adder | full adders | 72 gates |
+| CPU: decoder, ALU, flags, program counter | adders and gates | 383 gates |
+| Whole machine: CPU + 256 bytes of RAM | all of the above | 24,511 gates |
+| Programs: factorial, prime, bubble sort | instructions in RAM | JSON files |
+
+The lesson carries over to real Jev apps: **don't ask a model one big question it has to reason through. Break it into the smallest judgments it can answer sharply, and let code combine them.**
+
+### Is it really built from Jev?
+
+Yes, in the same way a real computer is built from transistors. Transistors decide what each gate outputs, but they still need a circuit board, wires and a clock. Here, **Jev decides what every gate outputs**. `cpu.json` is the circuit board, and `jev_run.py` is the wires and the clock. A computer built from redstone in Minecraft works the same way: it runs on a game engine written in Java, yet everyone calls it a redstone computer.
+
+To be precise about it: Jev answers the 4 gate cases **once per run**, and those answers drive all 24,511 gates on every clock cycle. Jev defines the gate; it doesn't flip each switch itself. There's no backup either: if Jev answered even one case wrong, every program would compute wrong. Python never does the arithmetic.
+
 ## Quick start
 
 Python 3.9+, standard library only.
