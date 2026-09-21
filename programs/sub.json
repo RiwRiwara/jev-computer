@@ -1,0 +1,13 @@
+{
+  "about": "a - b. Prints the low 8 bits, then 1 if it borrowed (so the answer is - 256).",
+  "inputs": {"a": 14, "b": 15},
+  "code": ["LDA 14", "SUB 15", "OUT", "JC 6", "LDI 1", "OUT", "HLT"],
+  "data": {"14": 7, "15": 6},
+  "result": {"second_output_adds": -256},
+  "tests": [
+    {"with": {"a": 7, "b": 6}, "expect": 1},
+    {"with": {"a": 15, "b": 17}, "expect": -2},
+    {"with": {"a": 1, "b": 255}, "expect": -254},
+    {"with": {"a": 255, "b": 255}, "expect": 0}
+  ]
+}

@@ -1,14 +1,11 @@
 {
- "ram0": 29,
- "ram1": 144,
- "ram2": 46,
- "ram3": 138,
- "ram4": 79,
- "ram5": 30,
- "ram6": 77,
- "ram7": 31,
- "ram8": 78,
- "ram9": 96,
- "ram10": 240,
- "ram14": 1
+  "about": "Fibonacci numbers until the 8-bit adder overflows.",
+  "code": [
+    "LDA 13", "OUT", "ADD 14", "JC 10", "STA 15",
+    "LDA 14", "STA 13", "LDA 15", "STA 14", "JMP 0", "HLT"
+  ],
+  "data": {"13": 0, "14": 1},
+  "tests": [
+    {"expect": [0, 1, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89, 144]}
+  ]
 }

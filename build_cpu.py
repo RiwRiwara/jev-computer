@@ -6,11 +6,10 @@ The whole machine (8-bit CPU + 16 bytes of RAM) is one synchronous circuit:
     state bits (registers + all 128 RAM bits)  --NAND netlist-->  next state bits
 Every gate is later answered by Jev; this file only wires them.
 
-    python build_cpu.py              # write cpu.json and programs/*.json
+    python build_cpu.py              # write cpu.json
     python build_cpu.py --check      # verify cpu.json against the ISA (ideal gates, no API)
 """
 import json
-import os
 import random
 import sys
 
@@ -156,30 +155,6 @@ def cpu_core(c, pc, A, C, ir, mdr):
     return outs
 
 
-def asm(program, data=None):
-    ram = [0] * 16
-    for i, line in enumerate(program):
-        op, *arg = line.split()
-        ram[i] = (OPS[op] << 4) | (int(arg[0]) if arg else 0)
-    for addr, v in (data or {}).items():
-        ram[addr] = v
-    return ram
-
-
-PROGRAMS = {
-    # Fibonacci until the 8-bit adder overflows: 0 1 1 2 3 5 ... 144
-    "fib": asm(["LDA 13", "OUT", "ADD 14", "JC 10", "STA 15",
-                "LDA 14", "STA 13", "LDA 15", "STA 14", "JMP 0", "HLT"],
-               {13: 0, 14: 1}),
-    # 5 4 3 2 1 0
-    "countdown": asm(["LDI 5", "OUT", "JZ 5", "SUB 15", "JMP 1", "HLT"], {15: 1}),
-    # 7 * 6 by repeated addition -> 42
-    "mul": asm(["LDA 13", "ADD 14", "STA 13", "LDA 15", "SUB 12", "STA 15",
-                "JZ 8", "JMP 0", "LDA 13", "OUT", "HLT"],
-               {12: 1, 13: 0, 14: 7, 15: 6}),
-}
-
-
 def reference_step(ram, pc, a, c):
     """Plain-Python ISA semantics, used only to check the netlist."""
     ir = ram[pc]; op, x = ir >> 4, ir & 15; m = ram[x]
@@ -255,6 +230,8 @@ def build():
         "halt": ids[o["halt"][0]],
         "display": {"when": ids[o["out"][0]], "show": [ids[n] for n in regs["a"]]},
         "trace": ["pc", "a"],
+        # how program JSON is assembled: word = opcode << operand_bits | operand
+        "isa": {"opcodes": OPS, "operand_bits": 4, "memory": "ram", "words": WORDS},
     }
 
 
@@ -292,9 +269,5 @@ if __name__ == "__main__":
     m = build()
     with open("cpu.json", "w") as f:
         json.dump(m, f, separators=(",", ":"))
-    os.makedirs("programs", exist_ok=True)
-    for name, image in PROGRAMS.items():
-        with open(f"programs/{name}.json", "w") as f:
-            json.dump({f"ram{k}": v for k, v in enumerate(image) if v}, f, indent=1)
     print(f"cpu.json: {len(m['gates'])} gates, {len(m['level_sizes'])} levels, "
-          f"{len(m['next'])} state bits; programs: {', '.join(PROGRAMS)}")
+          f"{len(m['next'])} state bits")

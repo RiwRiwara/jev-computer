@@ -1,9 +1,10 @@
 {
- "ram0": 85,
- "ram1": 144,
- "ram2": 117,
- "ram3": 63,
- "ram4": 97,
- "ram5": 240,
- "ram15": 1
+  "about": "Count down from n to 0.",
+  "inputs": {"n": 14},
+  "code": ["LDA 14", "OUT", "JZ 5", "SUB 15", "JMP 1", "HLT"],
+  "data": {"14": 5, "15": 1},
+  "tests": [
+    {"with": {"n": 5}, "expect": [5, 4, 3, 2, 1, 0]},
+    {"with": {"n": 0}, "expect": [0]}
+  ]
 }

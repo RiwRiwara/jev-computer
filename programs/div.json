@@ -1,0 +1,16 @@
+{
+  "about": "a / b by repeated subtraction: the whole-number quotient. b must not be 0 (the loop never ends).",
+  "inputs": {"a": 13, "b": 14},
+  "code": [
+    "LDA 13", "SUB 14", "JC 6", "LDA 15", "OUT", "HLT",
+    "STA 13", "LDA 15", "ADD 12", "STA 15", "JMP 0"
+  ],
+  "data": {"12": 1, "13": 200, "14": 7, "15": 0},
+  "result": {},
+  "tests": [
+    {"with": {"a": 200, "b": 7}, "expect": 28},
+    {"with": {"a": 255, "b": 16}, "expect": 15},
+    {"with": {"a": 100, "b": 200}, "expect": 0},
+    {"with": {"a": 255, "b": 255}, "expect": 1}
+  ]
+}

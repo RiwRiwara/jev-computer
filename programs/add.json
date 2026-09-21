@@ -1,0 +1,13 @@
+{
+  "about": "a + b. Prints the low 8 bits, then 1 if the adder carried (so the answer is + 256).",
+  "inputs": {"a": 14, "b": 15},
+  "code": ["LDA 14", "ADD 15", "OUT", "JC 5", "HLT", "LDI 1", "OUT", "HLT"],
+  "data": {"14": 40, "15": 3},
+  "result": {"second_output_adds": 256},
+  "tests": [
+    {"with": {"a": 40, "b": 3}, "expect": 43},
+    {"with": {"a": 0, "b": 0}, "expect": 0},
+    {"with": {"a": 255, "b": 1}, "expect": 256},
+    {"with": {"a": 255, "b": 255}, "expect": 510}
+  ]
+}
