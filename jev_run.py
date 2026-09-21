@@ -142,7 +142,7 @@ def read_result(prog, out):
         return out                          # no rule: the answer is everything printed
     if not out:
         return rule.get("no_output", "no output")
-    return out[0] + rule.get("second_output_adds", 0) * (len(out) > 1)
+    return out[0] + rule.get("add", 0) + rule.get("second_output_adds", 0) * (len(out) > 1)
 
 
 def disasm(m, byte):

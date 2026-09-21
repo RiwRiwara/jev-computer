@@ -1,0 +1,19 @@
+{
+  "about": "Greatest common divisor of a and b (Euclid, by repeated subtraction). a and b must be 1-255.",
+  "inputs": {"a": 14, "b": 15},
+  "code": [
+    "LDA 14", "SUB 15", "JZ 10", "JC 8",
+    "LDA 15", "SUB 14", "STA 15", "JMP 0",
+    "STA 14", "JMP 0",
+    "LDA 14", "OUT", "HLT"
+  ],
+  "data": {"14": 48, "15": 18},
+  "result": {},
+  "tests": [
+    {"with": {"a": 48, "b": 18}, "expect": 6},
+    {"with": {"a": 17, "b": 5}, "expect": 1},
+    {"with": {"a": 100, "b": 75}, "expect": 25},
+    {"with": {"a": 12, "b": 12}, "expect": 12},
+    {"with": {"a": 255, "b": 85}, "expect": 85}
+  ]
+}

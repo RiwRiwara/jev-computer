@@ -1,0 +1,17 @@
+{
+  "about": "The largest of three numbers a, b, c.",
+  "inputs": {"a": 13, "b": 14, "c": 15},
+  "code": [
+    "LDA 13", "SUB 14", "JC 5", "LDA 14", "STA 13",
+    "LDA 13", "SUB 15", "JC 10", "LDA 15", "STA 13",
+    "LDA 13", "OUT", "HLT"
+  ],
+  "data": {"13": 7, "14": 42, "15": 19},
+  "result": {},
+  "tests": [
+    {"with": {"a": 7, "b": 42, "c": 19}, "expect": 42},
+    {"with": {"a": 200, "b": 3, "c": 99}, "expect": 200},
+    {"with": {"a": 1, "b": 2, "c": 250}, "expect": 250},
+    {"with": {"a": 5, "b": 5, "c": 5}, "expect": 5}
+  ]
+}

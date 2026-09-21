@@ -58,8 +58,19 @@ jev: 1 request · 446 input tokens ($0.000019) · 0.9 s · 59 clock cycles · 12
 | `programs/div.json` | a ÷ b (ผลหารจำนวนเต็ม) | `a`, `b` | `a=200 b=7` → 28 |
 | `programs/countdown.json` | นับ n, n−1, … 0 | `n` | `n=5` → 5 4 3 2 1 0 |
 | `programs/fib.json` | Fibonacci ถึง 144 | — | 0 1 1 2 … 144 |
+| `programs/gcd.json` | ห.ร.ม. (Euclid) | `a`, `b` (1–255) | `a=48 b=18` → 6 |
+| `programs/max3.json` | ค่าที่มากที่สุดของ 3 ตัว | `a`, `b`, `c` | `a=7 b=42 c=19` → 42 |
+| `programs/linear_search.json` | ตำแหน่งของ `x` ใน list 3 ตัว (3 = ไม่เจอ) | `a0`, `a1`, `a2`, `x` | `a0=4 a1=7 a2=9 x=7` → 1 |
+| `programs/pow2.json` | 2 ยกกำลัง y (ได้ถึง 128) | `y` | `y=5` → 32 |
+| `programs/sum_to_n.json` | 1 + 2 + … + n (ได้ถึง 253) | `n` | `n=10` → 55 |
 
-ทุกโปรแกรมผ่านชุดทดสอบกับ Jev จริง 19 จาก 19 เคส ใช้ 19 requests และ 8,474 input tokens
+ทุกโปรแกรมผ่านชุดทดสอบกับ Jev จริง 42 จาก 42 เคส ใช้ 42 requests และ 18,732 input tokens
+
+`linear_search` ไล่อ่าน list ด้วยการแก้คำสั่ง `LDA` ของตัวเองทุกรอบ loop (self-modifying code) เพราะ CPU ไม่มีคำสั่ง pointer
+
+### สิ่งที่ยังใส่ไม่ได้
+
+code กับ data ใช้ RAM **16 bytes** ร่วมกัน โปรแกรมที่ต้องมี loop ซ้อน loop จะไม่พอ เพราะแค่การคูณแบบ loop ซ้อนก็ใช้ราว 12 bytes แล้ว จึงยังทำ `factorial`, `prime` (หารทดลอง), `x^y` แบบทั่วไป และ `bubble_sort` ไม่ได้ ถ้าจะทำต้องขยายเครื่อง เช่นใช้ address 8-bit กับ RAM 256 bytes ซึ่งต้องเปลี่ยนรูปแบบคำสั่งและสร้าง `cpu.json` ใหม่
 
 ### ใช้โปรแกรมคำนวณให้ได้ผลดี
 
@@ -107,6 +118,7 @@ python jev_run.py double.json --test   # 2/2 passed
 รูปแบบของ `result`:
 - ไม่ใส่ `result`: ได้ list ของทุกค่าที่ `OUT` ออกมา
 - `{}`: ค่าแรกที่ `OUT` คือคำตอบ
+- `"add": n`: บวก n เข้ากับคำตอบ
 - `"second_output_adds": 256`: ถ้ามี `OUT` ครั้งที่สอง (เช่น carry) ให้บวก 256
 - `"no_output": "ข้อความ"`: คำตอบที่ใช้เมื่อไม่มีการ `OUT` เลย
 
@@ -138,7 +150,7 @@ python jev_run.py double.json --test   # 2/2 passed
 | การทดลอง | ผล | Requests | Input tokens | เวลา |
 |---|---|---:|---:|---:|
 | Gate selftest ถามซ้ำ 5 รอบ × 4 กรณี | ถูก 20/20, p = 0.00–0.01 / 0.99 | 5 | 2,230 | — |
-| ชุดทดสอบทุกโปรแกรม | ผ่าน 19/19 | 19 | 8,474 | ~15 วินาที |
+| ชุดทดสอบทุกโปรแกรม (11 โปรแกรม) | ผ่าน 42/42 | 42 | 18,732 | ~35 วินาที |
 
 ## ทำงานอย่างไร
 
@@ -203,7 +215,7 @@ sequenceDiagram
 | ไฟล์ | คืออะไร |
 |---|---|
 | `jev_run.py` | ตัวรัน: โหลดโปรแกรม JSON ถาม Jev และเดิน clock |
-| `programs/*.json` | โปรแกรม: add, sub, mul, div, countdown, fib |
+| `programs/*.json` | 11 โปรแกรม: add, sub, mul, div, gcd, max3, linear_search, pow2, sum_to_n, countdown, fib |
 | `cpu.json` | ตัวเครื่อง: NAND 2,102 ตัว + ชุดคำสั่ง (สร้างอัตโนมัติ) |
 | `build_cpu.py` | สร้าง `cpu.json` จาก NAND ส่วน `--check` ใช้ตรวจวงจรโดยไม่เรียก API |
 

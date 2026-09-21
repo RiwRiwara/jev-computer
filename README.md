@@ -58,8 +58,19 @@ jev: 1 request · 446 input tokens ($0.000019) · 0.9 s · 59 clock cycles · 12
 | `programs/div.json` | a ÷ b (whole number) | `a`, `b` | `a=200 b=7` → 28 |
 | `programs/countdown.json` | n, n−1, … 0 | `n` | `n=5` → 5 4 3 2 1 0 |
 | `programs/fib.json` | Fibonacci up to 144 | — | 0 1 1 2 … 144 |
+| `programs/gcd.json` | Greatest common divisor (Euclid) | `a`, `b` (1–255) | `a=48 b=18` → 6 |
+| `programs/max3.json` | Largest of three numbers | `a`, `b`, `c` | `a=7 b=42 c=19` → 42 |
+| `programs/linear_search.json` | Position of `x` in a list of 3 (3 = not found) | `a0`, `a1`, `a2`, `x` | `a0=4 a1=7 a2=9 x=7` → 1 |
+| `programs/pow2.json` | 2 to the power y (up to 128) | `y` | `y=5` → 32 |
+| `programs/sum_to_n.json` | 1 + 2 + … + n (up to 253) | `n` | `n=10` → 55 |
 
-Every program's tests pass on real Jev: 19 of 19, using 19 requests and 8,474 input tokens.
+Every program's tests pass on real Jev: 42 of 42, using 42 requests and 18,732 input tokens.
+
+`linear_search` walks the list by rewriting its own `LDA` instruction on each loop (self-modifying code), because the CPU has no pointer instructions.
+
+### What doesn't fit yet
+
+Code and data share **16 bytes** of RAM. Anything that needs a loop inside a loop runs out of room, because a nested multiply alone takes about 12 bytes. That rules out `factorial`, `prime` (trial division), general `x^y`, and `bubble_sort`. They would need a bigger machine, for example 8-bit addresses and 256 bytes of RAM, which means a new instruction format and a rebuilt `cpu.json`.
 
 ### Using the arithmetic programs well
 
@@ -97,7 +108,7 @@ python jev_run.py double.json --test   # 2/2 passed
 | `data` | Starting values for RAM addresses after the code, `{"address": value}` |
 | `inputs` | Names you can set from the command line, `{"name": address}` |
 | `about` | One line printed before running |
-| `result` | *Optional.* How to read the output port. Leave it out to get the list of every `OUT`. `{}` means the first `OUT` is the answer. `"second_output_adds": 256` adds 256 if there is a second `OUT` (a carry flag). `"no_output": "text"` is the answer when nothing was output. |
+| `result` | *Optional.* How to read the output port. Leave it out to get the list of every `OUT`. `{}` means the first `OUT` is the answer. `"add": n` adds n to it. `"second_output_adds": 256` adds 256 if there is a second `OUT` (a carry flag). `"no_output": "text"` is the answer when nothing was output. |
 | `tests` | *Optional.* `{"with": {inputs}, "expect": answer}` cases, used by `--test` |
 
 Rules: code and data share 16 bytes of RAM, and data can't overlap the code. Values are 0–255. The program must end with `HLT`.
@@ -125,7 +136,7 @@ Rules: code and data share 16 bytes of RAM, and data can't overlap the code. Val
 | Run | Result | Requests | Input tokens | Time |
 |---|---|---:|---:|---:|
 | Gate selftest, 5 repeats × 4 cases | 20/20 correct, p = 0.00–0.01 / 0.99 | 5 | 2,230 | — |
-| All program tests | 19/19 passed | 19 | 8,474 | ~15 s |
+| All program tests (11 programs) | 42/42 passed | 42 | 18,732 | ~35 s |
 
 ## How it works
 
@@ -184,7 +195,7 @@ sequenceDiagram
 | File | What it is |
 |---|---|
 | `jev_run.py` | The runner: loads a program JSON, asks Jev, runs the clock |
-| `programs/*.json` | Programs: add, sub, mul, div, countdown, fib |
+| `programs/*.json` | 11 programs: add, sub, mul, div, gcd, max3, linear_search, pow2, sum_to_n, countdown, fib |
 | `cpu.json` | The machine: 2,102 NAND gates + instruction set (generated) |
 | `build_cpu.py` | Builds `cpu.json` from NAND gates; `--check` verifies it (no API) |
 
