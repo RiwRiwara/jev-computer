@@ -1,0 +1,71 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 820 340" width="820" height="340" role="img" aria-label="The gate the machine uses: Jev is asked 'Are both a and b equal to 1?' for all four cases in one request. It answers 0%, 1%, 1% and 99%, giving AND 0,0,0,1 and NAND 1,1,1,0.">
+  <style>
+    .sans { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+    .label { font-size: 12px; font-weight: 600; letter-spacing: 1.2px; fill: #656d76; }
+    .ink { fill: #1f2328; }
+    .muted { fill: #656d76; }
+    .cell { font-size: 17px; }
+    .pct { font-size: 17px; font-weight: 700; }
+  </style>
+  <rect x="0.5" y="0.5" width="819" height="339" rx="12" fill="#ffffff" stroke="#d0d7de"/>
+
+  <text x="28" y="38" class="sans label">THE GATE THE MACHINE USES · 1 REQUEST · 4 QUESTIONS · 446 TOKENS</text>
+  <text x="28" y="70" class="mono ink" font-size="15">Are both `a` and `b` equal to 1?</text>
+  <text x="330" y="70" class="sans muted" font-size="14">→ AND, then inverted to NAND</text>
+
+  <!-- header -->
+  <text x="40" y="110" class="sans label" text-anchor="middle">A</text>
+  <text x="80" y="110" class="sans label" text-anchor="middle">B</text>
+  <text x="124" y="110" class="sans label">JEV: P(YES)</text>
+  <text x="620" y="110" class="sans label" text-anchor="middle">AND</text>
+  <text x="720" y="110" class="sans label" text-anchor="middle">NAND</text>
+  <line x1="28" y1="122" x2="792" y2="122" stroke="#d0d7de"/>
+
+  <!-- row 0 0 -->
+  <text x="40" y="154" class="mono ink cell" text-anchor="middle">0</text>
+  <text x="80" y="154" class="mono ink cell" text-anchor="middle">0</text>
+  <text x="124" y="154" class="sans ink pct">0%</text>
+  <rect x="200" y="143" width="340" height="8" rx="4" fill="#eaeef2"/>
+  <rect x="200" y="143" width="8" height="8" rx="4" fill="#cf222e"/>
+  <rect x="606" y="136" width="28" height="26" rx="6" fill="#eaeef2"/>
+  <text x="620" y="155" class="mono muted cell" text-anchor="middle">0</text>
+  <rect x="706" y="136" width="28" height="26" rx="6" fill="#1f2328"/>
+  <text x="720" y="155" class="mono cell" fill="#ffffff" text-anchor="middle">1</text>
+  <line x1="28" y1="172" x2="792" y2="172" stroke="#eaeef2"/>
+
+  <!-- row 0 1 -->
+  <text x="40" y="204" class="mono ink cell" text-anchor="middle">0</text>
+  <text x="80" y="204" class="mono ink cell" text-anchor="middle">1</text>
+  <text x="124" y="204" class="sans ink pct">1%</text>
+  <rect x="200" y="193" width="340" height="8" rx="4" fill="#eaeef2"/>
+  <rect x="200" y="193" width="8" height="8" rx="4" fill="#cf222e"/>
+  <rect x="606" y="186" width="28" height="26" rx="6" fill="#eaeef2"/>
+  <text x="620" y="205" class="mono muted cell" text-anchor="middle">0</text>
+  <rect x="706" y="186" width="28" height="26" rx="6" fill="#1f2328"/>
+  <text x="720" y="205" class="mono cell" fill="#ffffff" text-anchor="middle">1</text>
+  <line x1="28" y1="222" x2="792" y2="222" stroke="#eaeef2"/>
+
+  <!-- row 1 0 -->
+  <text x="40" y="254" class="mono ink cell" text-anchor="middle">1</text>
+  <text x="80" y="254" class="mono ink cell" text-anchor="middle">0</text>
+  <text x="124" y="254" class="sans ink pct">1%</text>
+  <rect x="200" y="243" width="340" height="8" rx="4" fill="#eaeef2"/>
+  <rect x="200" y="243" width="8" height="8" rx="4" fill="#cf222e"/>
+  <rect x="606" y="236" width="28" height="26" rx="6" fill="#eaeef2"/>
+  <text x="620" y="255" class="mono muted cell" text-anchor="middle">0</text>
+  <rect x="706" y="236" width="28" height="26" rx="6" fill="#1f2328"/>
+  <text x="720" y="255" class="mono cell" fill="#ffffff" text-anchor="middle">1</text>
+  <line x1="28" y1="272" x2="792" y2="272" stroke="#eaeef2"/>
+
+  <!-- row 1 1 -->
+  <text x="40" y="304" class="mono ink cell" text-anchor="middle">1</text>
+  <text x="80" y="304" class="mono ink cell" text-anchor="middle">1</text>
+  <text x="124" y="304" class="sans ink pct">99%</text>
+  <rect x="200" y="293" width="340" height="8" rx="4" fill="#eaeef2"/>
+  <rect x="200" y="293" width="337" height="8" rx="4" fill="#1a7f37"/>
+  <rect x="606" y="286" width="28" height="26" rx="6" fill="#1f2328"/>
+  <text x="620" y="305" class="mono cell" fill="#ffffff" text-anchor="middle">1</text>
+  <rect x="706" y="286" width="28" height="26" rx="6" fill="#eaeef2"/>
+  <text x="720" y="305" class="mono muted cell" text-anchor="middle">0</text>
+</svg>

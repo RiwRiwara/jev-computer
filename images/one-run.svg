@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 820 420" width="820" height="420" role="img" aria-label="One run: you call jev_run.py with programs/add.json a=40 b=3; it assembles the program into RAM, sends one request with 4 gate questions to the Jev API, gets 0.00, 0.01, 0.01, 0.99 back, then on every clock cycle until HLT evaluates 24,511 gates in cpu.json with those answers, and returns answer 43 using 446 tokens in 5 clock cycles.">
+  <style>
+    .sans { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+    .head { font-size: 14px; font-weight: 600; fill: #1f2328; }
+    .msg { font-size: 12.5px; fill: #1f2328; }
+    .box { fill: #ffffff; stroke: #d0d7de; }
+    .life { stroke: #d0d7de; stroke-width: 1.5; stroke-dasharray: 4 4; }
+    .wire { stroke: #57606a; stroke-width: 1.6; fill: none; }
+    .back { stroke: #57606a; stroke-width: 1.6; fill: none; stroke-dasharray: 5 4; }
+  </style>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#57606a"/>
+    </marker>
+  </defs>
+  <rect x="0.5" y="0.5" width="819" height="419" rx="12" fill="#f6f8fa" stroke="#d0d7de"/>
+
+  <!-- participants -->
+  <rect x="40" y="24" width="120" height="40" rx="8" class="box"/>
+  <text x="100" y="49" class="sans head" text-anchor="middle">You</text>
+  <rect x="240" y="24" width="140" height="40" rx="8" class="box"/>
+  <text x="310" y="49" class="mono head" text-anchor="middle">jev_run.py</text>
+  <rect x="460" y="24" width="120" height="40" rx="8" fill="#1f2328"/>
+  <text x="520" y="49" class="sans" font-size="14" font-weight="600" fill="#ffffff" text-anchor="middle">Jev API</text>
+  <rect x="660" y="24" width="120" height="40" rx="8" class="box"/>
+  <text x="720" y="49" class="mono head" text-anchor="middle">cpu.json</text>
+
+  <line x1="100" y1="64" x2="100" y2="400" class="life"/>
+  <line x1="310" y1="64" x2="310" y2="400" class="life"/>
+  <line x1="520" y1="64" x2="520" y2="400" class="life"/>
+  <line x1="720" y1="64" x2="720" y2="400" class="life"/>
+
+  <!-- 1 -->
+  <text x="205" y="94" class="mono msg" text-anchor="middle">add.json a=40 b=3</text>
+  <path d="M100 104 H306" class="wire" marker-end="url(#arrow)"/>
+
+  <!-- 2 self -->
+  <path d="M310 128 H350 V148 H314" class="wire" marker-end="url(#arrow)"/>
+  <text x="358" y="142" class="sans msg">assemble into RAM</text>
+
+  <!-- 3 -->
+  <text x="415" y="176" class="sans msg" text-anchor="middle">1 request, 4 gate questions</text>
+  <path d="M310 186 H516" class="wire" marker-end="url(#arrow)"/>
+
+  <!-- 4 -->
+  <text x="415" y="212" class="mono msg" text-anchor="middle">0.00 · 0.01 · 0.01 · 0.99</text>
+  <path d="M520 222 H314" class="back" marker-end="url(#arrow)"/>
+
+  <!-- loop -->
+  <rect x="282" y="240" width="480" height="104" rx="8" fill="none" stroke="#8c959f" stroke-dasharray="3 3"/>
+  <rect x="282" y="240" width="190" height="22" rx="6" fill="#eaeef2"/>
+  <text x="292" y="255" class="sans" font-size="12" font-weight="600" fill="#57606a">loop: every clock cycle until HLT</text>
+  <text x="515" y="282" class="sans msg" text-anchor="middle">evaluate 24,511 gates with Jev's answers</text>
+  <path d="M310 292 H716" class="wire" marker-end="url(#arrow)"/>
+  <text x="515" y="318" class="sans msg" text-anchor="middle">next PC, A, carry, RAM, OUT</text>
+  <path d="M720 328 H314" class="back" marker-end="url(#arrow)"/>
+
+  <!-- 5 -->
+  <text x="205" y="370" class="sans msg" text-anchor="middle">answer 43 · 446 tokens · 5 cycles</text>
+  <path d="M310 380 H104" class="back" marker-end="url(#arrow)"/>
+</svg>

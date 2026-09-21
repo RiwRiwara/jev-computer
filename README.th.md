@@ -10,15 +10,7 @@
 
 คำตอบของ Jev ต่อ input ทั้ง 4 แบบกลายเป็น AND gate แล้วกลับค่าเป็น NAND ซึ่งเป็น universal gate คือสร้างวงจรดิจิทัลอะไรก็ได้จาก NAND อย่างเดียว เอา NAND 24,511 ตัวมาต่อกันก็ได้คอมพิวเตอร์ที่มี RAM 256 bytes รัน factorial, ตรวจจำนวนเฉพาะ และ bubble sort ได้ ส่วนโปรแกรมเป็นแค่ไฟล์ JSON
 
-```mermaid
-flowchart LR
-    Q[เรียก Jev API] --> T[ตาราง NAND]
-    T --> FA[Full adder, NAND 9 ตัว]
-    FA --> ALU[ALU 8-bit]
-    ALU --> CPU[CPU 8-bit และ RAM 256 bytes, NAND 24511 ตัว]
-    P[โปรแกรม JSON] -->|โหลดลง RAM| CPU
-    CPU -->|OUT| ANS[คำตอบ]
-```
+![จาก Jev API ครั้งเดียว สู่คอมพิวเตอร์: ตาราง NAND, full adder, ALU 8-bit แล้วเป็น CPU กับ RAM 256 bytes จาก NAND 24,511 ตัว](images/overview.svg)
 
 ## แนวคิด: เริ่มจาก 0 กับ 1
 
@@ -41,15 +33,15 @@ flowchart LR
 
 บทเรียนนี้ใช้กับแอปจริงที่ใช้ Jev ได้ด้วย: **อย่าถาม model คำถามใหญ่ที่ต้องคิดหลายขั้น ให้แตกเป็นคำตัดสินเล็กๆ ที่มันตอบได้ชัด แล้วให้โค้ดเป็นคนประกอบ**
 
-### ใน Jev Playground
+### Jev ตอบอะไรจริงๆ
 
 **การทดลองแรก:** ถาม NAND ตรงๆ ด้วย a = 1, b = 1 Jev ตอบ 2% "true" ซึ่งถูกต้อง (NAND ของ 1 กับ 1 คือ 0)
 
-![การทดลองแรก: ถาม NAND ตรงๆ ใน Jev Playground](images/playground-first-nand.png)
+![การทดลองแรก: ถาม NAND ตรงๆ ใน Jev Playground](images/gate-first-try.svg)
 
 **ที่เครื่องใช้จริงตอนนี้:** ถามแบบ AND ครบทั้ง 4 กรณีใน request เดียว แล้วกลับค่าเป็น NAND Jev ตอบ 0%, 1%, 1% และ 99% ที่เปลี่ยนมาถามแบบ AND เพราะคำถามแบบปฏิเสธ ("Is it false that…") ทำให้ Noul ตอบได้คมน้อยลง และการถามครบ 4 กรณีใน request เดียวทั้งถูกกว่าและทดสอบได้ครบทุกกรณี
 
-![gate ที่เครื่องใช้จริง: ครบ 4 กรณีใน request เดียว](images/playground-gate-4-cases.png)
+![gate ที่เครื่องใช้จริง: ครบ 4 กรณีใน request เดียว](images/gate-truth-table.svg)
 
 ### สร้างจาก Jev จริงไหม?
 
@@ -213,41 +205,11 @@ operand ของคำสั่งเป็นได้ 3 แบบ:
 
 ทุกกล่องข้างล่างสร้างจาก NAND gate อย่างเดียว และทุก NAND gate ได้ค่ามาจากคำตอบของ Jev
 
-```mermaid
-flowchart LR
-    PC[PC] -->|address| RAM[RAM, 256 bytes]
-    RAM -->|คำสั่ง| DEC[ตัวถอดรหัสคำสั่ง]
-    RAM -->|ค่าที่ใช้คำนวณ| ALU[ALU, บวกและลบ]
-    A[Register A] --> ALU
-    DEC -->|ADD, SUB| ALU
-    ALU --> A
-    ALU --> C[Carry flag]
-    DEC -->|JMP, JZ, JC| NPC[PC ถัดไป, บวก 2 หรือกระโดด]
-    A -->|เป็น 0| NPC
-    C --> NPC
-    NPC --> PC
-    A -->|STA| RAM
-    A -->|OUT| OUTP[Output port]
-```
+![ภายใน CPU: PC, RAM, ตัวถอดรหัสคำสั่ง, ALU, register A, carry flag, PC ถัดไป และ output port](images/cpu-inside.svg)
 
 ### ลำดับการทำงานของการรันหนึ่งครั้ง
 
-```mermaid
-sequenceDiagram
-    participant U as คุณ
-    participant R as jev_run.py
-    participant J as Jev API
-    participant C as cpu.json
-    U->>R: programs/add.json a=40 b=3
-    R->>R: แปลง code และ data ลง RAM
-    R->>J: 1 request มีคำถาม gate 4 ข้อ
-    J-->>R: คำตอบ 0.00, 0.01, 0.01, 0.99
-    loop ทุกรอบ clock จนเจอ HLT
-        R->>C: ประมวลผล gate 24511 ตัวด้วยคำตอบของ Jev
-        C-->>R: PC, A, carry, RAM, OUT ใหม่
-    end
-    R-->>U: คำตอบ 43, 446 tokens, 5 รอบ clock
-```
+![การรันหนึ่งครั้ง: jev_run.py ถาม Jev ครั้งเดียว แล้วประมวลผล gate 24,511 ตัวทุกรอบ clock จนเจอ HLT](images/one-run.svg)
 
 | Jev: logic ทั้งหมด | โค้ด: ไม่มี logic |
 |---|---|

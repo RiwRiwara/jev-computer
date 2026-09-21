@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 820 190" width="820" height="190" role="img" aria-label="First try: Jev asked 'Is it false that both a and b are equal to 1?' with a=1, b=1, and answered 2% true, so NAND(1,1) = 0">
+  <style>
+    .sans { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+    .label { font-size: 12px; font-weight: 600; letter-spacing: 1.2px; fill: #656d76; }
+    .ink { fill: #1f2328; }
+    .muted { fill: #656d76; }
+  </style>
+  <rect x="0.5" y="0.5" width="819" height="189" rx="12" fill="#ffffff" stroke="#d0d7de"/>
+
+  <text x="28" y="38" class="sans label">FIRST TRY · NAND ASKED DIRECTLY</text>
+
+  <text x="28" y="72" class="sans label">STATE</text>
+  <text x="28" y="96" class="mono ink" font-size="15">{ "a": 1, "b": 1 }</text>
+  <text x="28" y="130" class="sans label">QUESTION (NOUL)</text>
+  <text x="28" y="154" class="mono ink" font-size="14">Is it false that both a and b are equal to 1?</text>
+
+  <line x1="470" y1="60" x2="470" y2="166" stroke="#d0d7de"/>
+
+  <text x="500" y="72" class="sans label">JEV ANSWER</text>
+  <text x="500" y="120" class="sans ink" font-size="44" font-weight="700">2%</text>
+  <text x="584" y="120" class="sans muted" font-size="16">true</text>
+  <rect x="500" y="134" width="290" height="8" rx="4" fill="#eaeef2"/>
+  <rect x="500" y="134" width="8" height="8" rx="4" fill="#cf222e"/>
+  <text x="500" y="166" class="sans" font-size="14" font-weight="600" fill="#1a7f37">NAND(1, 1) = 0 ✓ correct</text>
+</svg>

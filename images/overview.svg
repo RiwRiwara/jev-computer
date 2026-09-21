@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 820 250" width="820" height="250" role="img" aria-label="One Jev API call gives the NAND truth table, which builds a full adder, an 8-bit ALU, and a CPU with 256 bytes of RAM made of 24,511 NAND gates. A program JSON is loaded into RAM and the answer comes out of the OUT port.">
+  <style>
+    .sans { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; }
+    .title { font-size: 15px; font-weight: 600; fill: #1f2328; }
+    .sub { font-size: 12.5px; fill: #656d76; }
+    .box { fill: #ffffff; stroke: #d0d7de; }
+    .wire { stroke: #8c959f; stroke-width: 1.6; fill: none; }
+  </style>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#8c959f"/>
+    </marker>
+  </defs>
+  <rect x="0.5" y="0.5" width="819" height="249" rx="12" fill="#f6f8fa" stroke="#d0d7de"/>
+
+  <!-- row 1 -->
+  <rect x="24" y="28" width="170" height="64" rx="8" class="box"/>
+  <text x="109" y="56" class="sans title" text-anchor="middle">Jev API call</text>
+  <text x="109" y="76" class="sans sub" text-anchor="middle">1 request · 446 tokens</text>
+
+  <rect x="224" y="28" width="170" height="64" rx="8" class="box"/>
+  <text x="309" y="56" class="sans title" text-anchor="middle">NAND truth table</text>
+  <text x="309" y="76" class="sans sub" text-anchor="middle">0% · 1% · 1% · 99%</text>
+
+  <rect x="424" y="28" width="170" height="64" rx="8" class="box"/>
+  <text x="509" y="56" class="sans title" text-anchor="middle">Full adder</text>
+  <text x="509" y="76" class="sans sub" text-anchor="middle">9 NAND gates</text>
+
+  <rect x="624" y="28" width="170" height="64" rx="8" class="box"/>
+  <text x="709" y="56" class="sans title" text-anchor="middle">8-bit ALU</text>
+  <text x="709" y="76" class="sans sub" text-anchor="middle">add and subtract</text>
+
+  <path d="M194 60 H222" class="wire" marker-end="url(#arrow)"/>
+  <path d="M394 60 H422" class="wire" marker-end="url(#arrow)"/>
+  <path d="M594 60 H622" class="wire" marker-end="url(#arrow)"/>
+  <path d="M709 92 V118 H409 V148" class="wire" marker-end="url(#arrow)"/>
+
+  <!-- row 2 -->
+  <rect x="24" y="150" width="170" height="72" rx="8" class="box"/>
+  <text x="109" y="182" class="sans title" text-anchor="middle">Program JSON</text>
+  <text x="109" y="202" class="sans sub" text-anchor="middle">factorial, prime, sort…</text>
+
+  <rect x="224" y="150" width="370" height="72" rx="8" fill="#1f2328"/>
+  <text x="409" y="182" class="sans" font-size="16" font-weight="600" fill="#ffffff" text-anchor="middle">8-bit CPU + 256 bytes of RAM</text>
+  <text x="409" y="203" class="sans" font-size="13" fill="#d0d7de" text-anchor="middle">24,511 NAND gates, every one from Jev's answers</text>
+
+  <rect x="624" y="150" width="170" height="72" rx="8" class="box"/>
+  <text x="709" y="182" class="sans title" text-anchor="middle">Answer</text>
+  <text x="709" y="202" class="sans sub" text-anchor="middle">from the OUT port</text>
+
+  <path d="M194 186 H222" class="wire" marker-end="url(#arrow)"/>
+  <text x="208" y="176" class="sans" font-size="11" fill="#656d76" text-anchor="middle">RAM</text>
+  <path d="M594 186 H622" class="wire" marker-end="url(#arrow)"/>
+</svg>

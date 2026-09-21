@@ -10,15 +10,7 @@
 
 Its answers to the four possible inputs become an AND gate, which is inverted to NAND. NAND is a universal gate, so 24,511 of them wired together make a working computer with 256 bytes of RAM. It runs factorial, prime testing and bubble sort. Programs are plain JSON files.
 
-```mermaid
-flowchart LR
-    Q[Jev API call] --> T[NAND truth table]
-    T --> FA[Full adder, 9 NAND gates]
-    FA --> ALU[8-bit ALU]
-    ALU --> CPU[8-bit CPU and 256-byte RAM, 24511 NAND gates]
-    P[Program JSON] -->|loaded into RAM| CPU
-    CPU -->|OUT| ANS[Answer]
-```
+![From one Jev API call to a computer: NAND truth table, full adder, 8-bit ALU, then a CPU with 256 bytes of RAM made of 24,511 NAND gates](images/overview.svg)
 
 ## The idea: start from 0 and 1
 
@@ -41,15 +33,15 @@ It didn't start as a computer. It started as a question: **can Jev add numbers?*
 
 The lesson carries over to real Jev apps: **don't ask a model one big question it has to reason through. Break it into the smallest judgments it can answer sharply, and let code combine them.**
 
-### In the Jev Playground
+### What Jev actually answered
 
 **The first try:** asking for NAND directly with a = 1, b = 1. Jev said 2% "true", which is correct (NAND of 1 and 1 is 0).
 
-![First try: asking NAND directly in the Jev Playground](images/playground-first-nand.png)
+![First try: asking NAND directly in the Jev Playground](images/gate-first-try.svg)
 
 **What the machine uses now:** the AND question for all four cases in one request, then inverted to NAND. Jev answers 0%, 1%, 1% and 99%. The machine switched to the AND wording because negated questions ("Is it false that…") make Noul less sharp, and because one request covering all four cases is cheaper and can be tested completely.
 
-![The gate the machine uses: all four cases in one request](images/playground-gate-4-cases.png)
+![The gate the machine uses: all four cases in one request](images/gate-truth-table.svg)
 
 ### Is it really built from Jev?
 
@@ -195,41 +187,11 @@ Rules: code and data share 256 bytes of RAM (each instruction takes 2). Values a
 
 Every box below is built only from NAND gates, and every NAND gate takes its output from Jev's answers.
 
-```mermaid
-flowchart LR
-    PC[PC] -->|address| RAM[RAM, 256 bytes]
-    RAM -->|instruction| DEC[Instruction decoder]
-    RAM -->|operand| ALU[ALU, add and subtract]
-    A[Register A] --> ALU
-    DEC -->|ADD, SUB| ALU
-    ALU --> A
-    ALU --> C[Carry flag]
-    DEC -->|JMP, JZ, JC| NPC[Next PC, plus 2 or jump]
-    A -->|is zero| NPC
-    C --> NPC
-    NPC --> PC
-    A -->|STA| RAM
-    A -->|OUT| OUTP[Output port]
-```
+![Inside the CPU: PC, RAM, instruction decoder, ALU, register A, carry flag, next PC and output port](images/cpu-inside.svg)
 
 ### One run, step by step
 
-```mermaid
-sequenceDiagram
-    participant U as You
-    participant R as jev_run.py
-    participant J as Jev API
-    participant C as cpu.json
-    U->>R: programs/add.json a=40 b=3
-    R->>R: Assemble code and data into RAM
-    R->>J: One request with 4 gate questions
-    J-->>R: Answers 0.00, 0.01, 0.01, 0.99
-    loop Every clock cycle until HLT
-        R->>C: Evaluate 24511 gates with Jev answers
-        C-->>R: Next PC, A, carry, RAM, OUT
-    end
-    R-->>U: Answer 43, 446 tokens, 5 clock cycles
-```
+![One run: jev_run.py asks Jev once, then evaluates 24,511 gates on every clock cycle until HLT](images/one-run.svg)
 
 | Jev: all the logic | Code: no logic |
 |---|---|
