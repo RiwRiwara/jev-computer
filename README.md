@@ -104,6 +104,7 @@ python jev_run.py programs/bubble_sort.json list=5,2,9,1,7,3
 | `--trace` | Print every instruction the CPU runs |
 | `--test` | Run the tests written inside the program's JSON |
 | `--selftest` | Ask Jev the gate question 5 times and check every answer |
+| `--cpu=NAME` | Run on another CPU model: `mini`, `classic` or `plus` (see [CPU models](#cpu-models)) |
 
 ## Programs
 
@@ -139,6 +140,47 @@ All files are in `programs/`.
 - **Every run costs the same:** 1 request, 446 tokens, about $0.00002, because Jev answers the gate once and every gate reuses it.
 - **Time is mostly waiting on Jev** (about 0.7–0.9 s). Running the gates locally only matters for long programs like `prime n=251`.
 - **Tests:** all 65 tests across the 15 programs pass (65 requests, 28,990 tokens), and the gate selftest is 20/20.
+
+## CPU models
+
+There are three machines. All use the same gate question and the same instruction encoding, so programs in `programs/` run on any model they fit in.
+
+| Model | File | RAM | NAND gates | Instructions | `prime n=251` |
+|---|---|---|---:|---|---:|
+| `mini` | `cpus/mini/cpu.json` | 64 bytes | 6,477 | 11 | 1.9 s |
+| `classic` (default) | `cpu.json` | 256 bytes | 24,511 | 11 | 4.8 s |
+| `plus` | `cpus/plus/cpu.json` | 256 bytes | 32,737 | 16 | 7.0 s |
+
+Every model costs the same: 1 request, 446 tokens. Jev only ever answers the 4 gate cases; a bigger model just means more gates to run locally.
+
+```bash
+python jev_run.py programs/prime.json n=251 --cpu=mini          # pick a model
+python jev_run.py cpus/plus/programs/mul_fast.json a=1 b=200    # programs in cpus/plus/ use plus automatically
+```
+
+- **`mini`** fits 13 of the 15 programs. `bubble_sort` (104 bytes) and `max_min` (69 bytes) are too big, and the runner says so.
+- **`plus`** adds 5 instructions:
+
+| Instruction | Meaning |
+|---|---|
+| `LDX n` | A = RAM[RAM[n]] (read through a pointer) |
+| `STX n` | RAM[RAM[n]] = A (write through a pointer) |
+| `AND n` | A = A AND RAM[n], bit by bit |
+| `SHL` | shift A left one bit; carry = the bit shifted out |
+| `SHR` | shift A right one bit; carry = the bit shifted out |
+
+Programs for `plus`, in `cpus/plus/programs/`:
+
+| File | Does | Example |
+|---|---|---|
+| `mul_fast.json` | a × b by shift-and-add | `a=1 b=200` → 200 in 114 clock cycles (`mul` takes 1,805) |
+| `popcount.json` | Count the 1-bits in n | `n=170` → 4 |
+| `bubble_sort.json` | Sort 6 numbers with pointers instead of self-modifying code | `list=5,2,9,1,7,3` → [1, 2, 3, 5, 7, 9] |
+| `max_min.json` | Largest and smallest of 8 numbers, with pointers | → [200, 3] |
+
+All 19 `plus` tests pass on real Jev.
+
+To add a model, add an entry to `MODELS` in `build_cpu.py` and run `python build_cpu.py NAME`.
 
 ## Write your own program
 
@@ -225,8 +267,9 @@ Jev answers the 4 cases once per run, and those answers drive every gate on ever
 |---|---|---|
 | `jev_run.py` | The runner: loads a program, asks Jev once, runs the clock | Every time you run something |
 | `programs/*.json` | The 15 programs | Add a file here to add a program |
-| `cpu.json` | The machine: 24,511 NAND gates and the instruction set (generated) | Read by `jev_run.py` |
-| `build_cpu.py` | Builds `cpu.json`; `--check` verifies it without the API | Only if you change the machine's design |
+| `cpu.json` | The classic machine: 24,511 NAND gates and the instruction set (generated) | Read by `jev_run.py` |
+| `cpus/` | Other CPU models (`mini`, `plus`) and programs for `plus` | `--cpu=NAME`, or run a program from `cpus/plus/programs/` |
+| `build_cpu.py` | Builds each model's `cpu.json`; `--check` verifies it without the API | Only if you change or add a machine |
 
 ## What this is (and isn't)
 

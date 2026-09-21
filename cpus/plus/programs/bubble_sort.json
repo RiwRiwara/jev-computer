@@ -1,0 +1,152 @@
+{
+  "about": "Sort a list of 6 numbers (smallest first) with bubble sort, using pointer instructions LDX/STX (plus model).",
+  "inputs": [
+    "list"
+  ],
+  "code": [
+    "outer: LDA passes",
+    "JZ print",
+    "SUB one",
+    "STA passes",
+    "LDI list",
+    "STA p",
+    "LDA pairs",
+    "STA j",
+    "inner: LDA j",
+    "JZ outer",
+    "SUB one",
+    "STA j",
+    "LDX p",
+    "STA a",
+    "LDA p",
+    "ADD one",
+    "STA q",
+    "LDX q",
+    "STA b",
+    "SUB a",
+    "JC next",
+    "LDA b",
+    "STX p",
+    "LDA a",
+    "STX q",
+    "next: LDA q",
+    "STA p",
+    "JMP inner",
+    "print: LDI list",
+    "STA p",
+    "LDA n",
+    "STA j",
+    "ploop: LDA j",
+    "JZ end",
+    "SUB one",
+    "STA j",
+    "LDX p",
+    "OUT",
+    "LDA p",
+    "ADD one",
+    "STA p",
+    "JMP ploop",
+    "end: HLT"
+  ],
+  "data": {
+    "list": [
+      5,
+      2,
+      9,
+      1,
+      7,
+      3
+    ],
+    "n": 6,
+    "passes": 5,
+    "pairs": 5,
+    "p": 0,
+    "q": 0,
+    "j": 0,
+    "a": 0,
+    "b": 0,
+    "one": 1
+  },
+  "tests": [
+    {
+      "with": {
+        "list": [
+          5,
+          2,
+          9,
+          1,
+          7,
+          3
+        ]
+      },
+      "expect": [
+        1,
+        2,
+        3,
+        5,
+        7,
+        9
+      ]
+    },
+    {
+      "with": {
+        "list": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ]
+      },
+      "expect": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ]
+    },
+    {
+      "with": {
+        "list": [
+          255,
+          200,
+          100,
+          50,
+          25,
+          0
+        ]
+      },
+      "expect": [
+        0,
+        25,
+        50,
+        100,
+        200,
+        255
+      ]
+    },
+    {
+      "with": {
+        "list": [
+          7,
+          3,
+          7,
+          3,
+          7,
+          3
+        ]
+      },
+      "expect": [
+        3,
+        3,
+        3,
+        7,
+        7,
+        7
+      ]
+    }
+  ]
+}

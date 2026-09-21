@@ -1,0 +1,82 @@
+{
+  "about": "a x b by shift-and-add: at most 8 rounds whatever b is (plus model: AND, SHL, SHR). Answers overflow above 255.",
+  "inputs": [
+    "a",
+    "b"
+  ],
+  "code": [
+    "loop: LDA b",
+    "JZ done",
+    "AND one",
+    "JZ skip",
+    "LDA r",
+    "ADD a",
+    "JC over",
+    "STA r",
+    "skip: LDA b",
+    "SHR",
+    "STA b",
+    "JZ done",
+    "LDA a",
+    "SHL",
+    "JC over",
+    "STA a",
+    "JMP loop",
+    "done: LDA r",
+    "OUT",
+    "over: HLT"
+  ],
+  "data": {
+    "a": 7,
+    "b": 6,
+    "r": 0,
+    "one": 1
+  },
+  "result": {
+    "no_output": "overflow (> 255)"
+  },
+  "tests": [
+    {
+      "with": {
+        "a": 7,
+        "b": 6
+      },
+      "expect": 42
+    },
+    {
+      "with": {
+        "a": 1,
+        "b": 200
+      },
+      "expect": 200
+    },
+    {
+      "with": {
+        "a": 200,
+        "b": 1
+      },
+      "expect": 200
+    },
+    {
+      "with": {
+        "a": 15,
+        "b": 17
+      },
+      "expect": 255
+    },
+    {
+      "with": {
+        "a": 12,
+        "b": 0
+      },
+      "expect": 0
+    },
+    {
+      "with": {
+        "a": 16,
+        "b": 16
+      },
+      "expect": "overflow (> 255)"
+    }
+  ]
+}

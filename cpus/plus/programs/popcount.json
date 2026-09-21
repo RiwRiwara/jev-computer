@@ -1,0 +1,58 @@
+{
+  "about": "How many 1-bits are in n? (plus model: AND, SHR)",
+  "inputs": [
+    "n"
+  ],
+  "code": [
+    "loop: LDA n",
+    "JZ done",
+    "AND one",
+    "ADD count",
+    "STA count",
+    "LDA n",
+    "SHR",
+    "STA n",
+    "JMP loop",
+    "done: LDA count",
+    "OUT",
+    "HLT"
+  ],
+  "data": {
+    "n": 170,
+    "count": 0,
+    "one": 1
+  },
+  "result": {},
+  "tests": [
+    {
+      "with": {
+        "n": 0
+      },
+      "expect": 0
+    },
+    {
+      "with": {
+        "n": 1
+      },
+      "expect": 1
+    },
+    {
+      "with": {
+        "n": 170
+      },
+      "expect": 4
+    },
+    {
+      "with": {
+        "n": 128
+      },
+      "expect": 1
+    },
+    {
+      "with": {
+        "n": 255
+      },
+      "expect": 8
+    }
+  ]
+}

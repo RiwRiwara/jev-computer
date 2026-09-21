@@ -11,6 +11,9 @@ Programs are JSON files in programs/ (see README for the format).
     python jev_run.py programs/add.json a=40 b=3 --trace   # show every instruction
     python jev_run.py programs/add.json --test          # run the tests inside the JSON
     python jev_run.py --selftest                        # check the gate answers, 5 requests
+    python jev_run.py programs/add.json --cpu=mini      # pick a CPU model from cpus/
+
+Programs inside cpus/<model>/programs/ run on that model automatically.
 """
 import json, os, re, sys, time, urllib.request, urllib.error
 
@@ -186,8 +189,8 @@ def execute(m, prog, inputs, trace=False):
     return read_result(prog, out), out, st
 
 
-def usage(st):
-    return (f"jev: {st.requests} request{'s' * (st.requests != 1)} · {st.input_tokens:,} input tokens "
+def usage(st, m):
+    return (f"cpu: {m.get('cpu', 'classic')} · jev: {st.requests} request{'s' * (st.requests != 1)} · {st.input_tokens:,} input tokens "
             f"(${st.input_tokens / 1e6 * PRICE_PER_MTOK:.6f}) · {st.seconds:.1f} s · "
             f"{st.cycles:,} clock cycles · {st.gate_evals:,} gate evaluations")
 
@@ -229,14 +232,32 @@ def selftest(m, n):
     return ok
 
 
+def machine_path(flags, program):
+    """--cpu=NAME picks cpus/NAME/cpu.json; a program in cpus/NAME/programs/ uses that model;
+    otherwise the classic cpu.json next to this script."""
+    for f in flags:
+        if f.startswith("--cpu="):
+            name = f.split("=", 1)[1]
+            path = os.path.join(HERE, "cpu.json") if name == "classic" else os.path.join(HERE, "cpus", name, "cpu.json")
+            if not os.path.exists(path):
+                models = ["classic"] + sorted(os.listdir(os.path.join(HERE, "cpus")))
+                sys.exit(f"unknown cpu {name!r}; models: {', '.join(models)}")
+            return path
+    if program:
+        beside = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(program))), "cpu.json")
+        if os.path.exists(beside):
+            return beside
+    return os.path.join(HERE, "cpu.json")
+
+
 def main():
     load_env()
     flags = {a for a in sys.argv[1:] if a.startswith("--")}
     args = [a for a in sys.argv[1:] if not a.startswith("--")]
-    m = load(os.path.join(HERE, "cpu.json"))
-    unknown = flags - {"--trace", "--test", "--selftest"}
+    unknown = {f for f in flags if f not in ("--trace", "--test", "--selftest") and not f.startswith("--cpu=")}
     if unknown:
-        sys.exit(f"unknown option {', '.join(sorted(unknown))} — options are --trace, --test, --selftest")
+        sys.exit(f"unknown option {', '.join(sorted(unknown))} — options are --trace, --test, --selftest, --cpu=NAME")
+    m = load(machine_path(flags, args[0] if args else None))
     if not os.environ.get("TYPESAFE_API_KEY"):
         sys.exit("TYPESAFE_API_KEY not found — put it in .env")
     if "--selftest" in flags:
@@ -262,7 +283,7 @@ def main():
     if prog.get("result") is not None:
         print(f"output port: {out}")
     print(f"answer: {answer}")
-    print(usage(st))
+    print(usage(st, m))
 
 
 if __name__ == "__main__":
