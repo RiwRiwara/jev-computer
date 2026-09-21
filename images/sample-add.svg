@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" xml:space="preserve" viewBox="0 0 820 410" width="820" height="410" role="img" aria-label="Sample run of add.json with a=40 b=3 and --trace: five instructions run, the output port shows 43. Cost: 1 Jev request, 446 input tokens, $0.000019. Time: 0.81 s, of which 0.80 s waiting on Jev and 0.01 s running gates. 5 clock cycles, 122,555 gate evaluations.">
+  <style>
+    .sans { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+    .t { font-size: 13.5px; fill: #e6edf3; white-space: pre; }
+    .dim { fill: #8b949e; }
+    .label { font-size: 11.5px; font-weight: 600; letter-spacing: 1.1px; fill: #656d76; }
+    .big { font-size: 24px; font-weight: 700; fill: #1f2328; }
+    .small { font-size: 12.5px; fill: #656d76; }
+  </style>
+  <rect x="0.5" y="0.5" width="819" height="409" rx="12" fill="#f6f8fa" stroke="#d0d7de"/>
+
+  <!-- terminal -->
+  <rect x="20" y="20" width="780" height="246" rx="10" fill="#0d1117"/>
+  <circle cx="40" cy="38" r="5" fill="#ff5f57"/>
+  <circle cx="58" cy="38" r="5" fill="#febc2e"/>
+  <circle cx="76" cy="38" r="5" fill="#28c840"/>
+  <text x="100" y="42" class="sans" font-size="12" fill="#8b949e">sample run · add.json</text>
+
+  <text x="40" y="74" class="mono t"><tspan fill="#7ee787">$</tspan> python jev_run.py programs/add.json a=40 b=3 --trace</text>
+  <text x="40" y="100" class="mono t dim">  cycle  pc   instruction  A     carry</text>
+  <text x="40" y="122" class="mono t">      0   0   LDA 16       0     0</text>
+  <text x="40" y="142" class="mono t">      1   2   ADD 17      40     0</text>
+  <text x="40" y="162" class="mono t">      2   4   OUT         43     0     <tspan fill="#ffa657">▶ OUT 43</tspan></text>
+  <text x="40" y="182" class="mono t">      3   6   JC 10       43     0</text>
+  <text x="40" y="202" class="mono t">      4   8   HLT         43     0</text>
+  <text x="40" y="232" class="mono t">answer: <tspan fill="#7ee787" font-weight="700">43</tspan></text>
+
+  <!-- stat tiles -->
+  <rect x="20" y="282" width="186" height="108" rx="10" fill="#ffffff" stroke="#d0d7de"/>
+  <text x="38" y="308" class="sans label">COST</text>
+  <text x="38" y="342" class="sans big">$0.000019</text>
+  <text x="38" y="368" class="sans small">446 input tokens</text>
+
+  <rect x="218" y="282" width="186" height="108" rx="10" fill="#ffffff" stroke="#d0d7de"/>
+  <text x="236" y="308" class="sans label">JEV REQUESTS</text>
+  <text x="236" y="342" class="sans big">1</text>
+  <text x="236" y="368" class="sans small">4 gate questions</text>
+
+  <rect x="416" y="282" width="186" height="108" rx="10" fill="#ffffff" stroke="#d0d7de"/>
+  <text x="434" y="308" class="sans label">TIME</text>
+  <text x="434" y="342" class="sans big">0.81 s</text>
+  <rect x="434" y="354" width="150" height="7" rx="3.5" fill="#eaeef2"/>
+  <rect x="434" y="354" width="148" height="7" rx="3.5" fill="#1f2328"/>
+  <text x="434" y="380" class="sans small">0.80 s is waiting on Jev</text>
+
+  <rect x="614" y="282" width="186" height="108" rx="10" fill="#ffffff" stroke="#d0d7de"/>
+  <text x="632" y="308" class="sans label">WORK</text>
+  <text x="632" y="342" class="sans big">5 cycles</text>
+  <text x="632" y="368" class="sans small">122,555 gate evaluations</text>
+</svg>

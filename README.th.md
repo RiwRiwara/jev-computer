@@ -62,13 +62,7 @@ python jev_run.py programs/prime.json n=97            # 1 (เป็นจำน
 python jev_run.py programs/bubble_sort.json list=5,2,9,1,7,3
 ```
 
-```
-$ python jev_run.py programs/mul.json a=7 b=6
-a x b by repeated addition (b is the loop count). Answers overflow above 255.
-output port: [42]
-answer: 42
-jev: 1 request · 446 input tokens ($0.000019) · 0.9 s · 59 clock cycles · 1,446,149 gate evaluations
-```
+![ตัวอย่างการรัน add.json a=40 b=3 แบบ --trace: ได้ 43, ถาม Jev 1 request, 446 tokens, $0.000019, 0.81 วินาที, 5 รอบ clock](images/sample-add.svg)
 
 | ตัวเลือก | ทำอะไร |
 |---|---|
@@ -183,6 +177,10 @@ operand ของคำสั่งเป็นได้ 3 แบบ:
 | `NOP` | ไม่ทำอะไร |
 
 ## ผลการรันจริง (`jev-1.13.0`)
+
+![ผลการรัน 8 โปรแกรมกับ Jev จริง: ทุกการรันใช้ 1 request, 446 tokens, $0.000019 ใช้เวลา 0.78 ถึง 4.48 วินาที](images/results.svg)
+
+การรอคำตอบจาก Jev ใช้ราว 0.7–0.9 วินาทีต่อการรัน ที่เหลือคือการประมวลผล gate ในเครื่องเอง ซึ่งมีผลแค่กับโปรแกรมที่รันนานอย่าง `prime n=251`
 
 | การทดลอง | ผล | Requests | Input tokens | เวลา |
 |---|---|---:|---:|---:|

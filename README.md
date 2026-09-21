@@ -62,13 +62,7 @@ python jev_run.py programs/prime.json n=97            # 1 (prime)
 python jev_run.py programs/bubble_sort.json list=5,2,9,1,7,3
 ```
 
-```
-$ python jev_run.py programs/mul.json a=7 b=6
-a x b by repeated addition (b is the loop count). Answers overflow above 255.
-output port: [42]
-answer: 42
-jev: 1 request · 446 input tokens ($0.000019) · 0.9 s · 59 clock cycles · 1,446,149 gate evaluations
-```
+![Sample run of add.json a=40 b=3 with --trace: answer 43, 1 Jev request, 446 tokens, $0.000019, 0.81 s, 5 clock cycles](images/sample-add.svg)
 
 | Option | What it does |
 |---|---|
@@ -171,6 +165,10 @@ Rules: code and data share 256 bytes of RAM (each instruction takes 2). Values a
 | `NOP` | do nothing |
 
 ## Results (real runs against `jev-1.13.0`)
+
+![Sample runs of 8 programs on real Jev: every run is 1 request, 446 tokens, $0.000019; time ranges from 0.78 s to 4.48 s](images/results.svg)
+
+Waiting on Jev takes about 0.7–0.9 s per run. The rest is running the gates locally, which only matters for long programs like `prime n=251`.
 
 | Run | Result | Requests | Input tokens | Time |
 |---|---|---:|---:|---:|
