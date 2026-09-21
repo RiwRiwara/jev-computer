@@ -12,15 +12,12 @@ Its answers to the four possible inputs become an AND gate, which is inverted to
 
 ```mermaid
 flowchart LR
-    Q["Jev API call<br/>'Are both a and b equal to 1?'<br/>1 request · 446 tokens"]
-    T["NAND truth table<br/>p = .00 · .01 · .01 · .99"]
-    FA["Full adder<br/>9 NAND gates"]
-    ALU["8-bit ALU"]
-    CPU["8-bit CPU + 16-byte RAM<br/>2,102 NAND gates · 59 levels"]
-    P["programs/*.json"]
-    Q --> T --> FA --> ALU --> CPU
-    P -- "loaded into RAM" --> CPU
-    CPU -- "OUT" --> A["answer"]
+    Q[Jev API call] --> T[NAND truth table]
+    T --> FA[Full adder, 9 NAND gates]
+    FA --> ALU[8-bit ALU]
+    ALU --> CPU[8-bit CPU and 16-byte RAM, 2102 NAND gates]
+    P[Program JSON] -->|loaded into RAM| CPU
+    CPU -->|OUT| ANS[Answer]
 ```
 
 ## Quick start
@@ -142,48 +139,38 @@ Every box below is built only from NAND gates, and every NAND gate takes its out
 
 ```mermaid
 flowchart LR
-    RAM["RAM<br/>16 bytes"]
-    DEC["Instruction decoder"]
-    ALU["ALU<br/>add / subtract"]
-    A["Register A"]
-    C["Carry flag"]
-    PCL["Next PC<br/>+1 or jump"]
-    PC["PC"]
-    OUT["Output port"]
-
-    PC -- "address" --> RAM
-    RAM -- "instruction" --> DEC
-    RAM -- "operand" --> ALU
-    A --> ALU
-    DEC -- "ADD / SUB" --> ALU
+    PC[PC] -->|address| RAM[RAM, 16 bytes]
+    RAM -->|instruction| DEC[Instruction decoder]
+    RAM -->|operand| ALU[ALU, add and subtract]
+    A[Register A] --> ALU
+    DEC -->|ADD, SUB| ALU
     ALU --> A
-    ALU --> C
-    DEC -- "JMP / JZ / JC" --> PCL
-    A -- "zero?" --> PCL
-    C --> PCL
-    PCL --> PC
-    A -- "STA" --> RAM
-    A -- "OUT" --> OUT
+    ALU --> C[Carry flag]
+    DEC -->|JMP, JZ, JC| NPC[Next PC, plus 1 or jump]
+    A -->|is zero| NPC
+    C --> NPC
+    NPC --> PC
+    A -->|STA| RAM
+    A -->|OUT| OUTP[Output port]
 ```
 
 ### One run, step by step
 
 ```mermaid
 sequenceDiagram
-    participant You
+    participant U as You
     participant R as jev_run.py
     participant J as Jev API
-    participant C as cpu.json<br/>2,102 NAND gates
-
-    You->>R: programs/add.json a=40 b=3
-    R->>R: assemble code + inputs into RAM
-    R->>J: 1 request, 4 questions (one per gate case)
-    J-->>R: p(yes) = .00 · .01 · .01 · .99
-    loop every clock cycle until HLT
-        R->>C: evaluate 59 levels using Jev's answers
-        C-->>R: next PC, A, carry, RAM, OUT
+    participant C as cpu.json
+    U->>R: programs/add.json a=40 b=3
+    R->>R: Assemble code and inputs into RAM
+    R->>J: One request with 4 gate questions
+    J-->>R: Answers 0.00, 0.01, 0.01, 0.99
+    loop Every clock cycle until HLT
+        R->>C: Evaluate 59 levels with Jev answers
+        C-->>R: Next PC, A, carry, RAM, OUT
     end
-    R-->>You: answer: 43 · 446 tokens · 5 clock cycles
+    R-->>U: Answer 43, 446 tokens, 5 clock cycles
 ```
 
 | Jev: all the logic | Code: no logic |

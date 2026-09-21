@@ -12,15 +12,12 @@
 
 ```mermaid
 flowchart LR
-    Q["เรียก Jev API<br/>'a กับ b เป็น 1 ทั้งคู่ไหม?'<br/>1 request · 446 tokens"]
-    T["ตาราง NAND<br/>p = .00 · .01 · .01 · .99"]
-    FA["Full adder<br/>NAND 9 ตัว"]
-    ALU["ALU 8-bit"]
-    CPU["CPU 8-bit + RAM 16 bytes<br/>NAND 2,102 ตัว · ลึก 59 ชั้น"]
-    P["programs/*.json"]
-    Q --> T --> FA --> ALU --> CPU
-    P -- "โหลดลง RAM" --> CPU
-    CPU -- "OUT" --> A["คำตอบ"]
+    Q[เรียก Jev API] --> T[ตาราง NAND]
+    T --> FA[Full adder, NAND 9 ตัว]
+    FA --> ALU[ALU 8-bit]
+    ALU --> CPU[CPU 8-bit และ RAM 16 bytes, NAND 2102 ตัว]
+    P[โปรแกรม JSON] -->|โหลดลง RAM| CPU
+    CPU -->|OUT| ANS[คำตอบ]
 ```
 
 ## เริ่มใช้งาน
@@ -161,48 +158,38 @@ python jev_run.py double.json --test   # 2/2 passed
 
 ```mermaid
 flowchart LR
-    RAM["RAM<br/>16 bytes"]
-    DEC["ตัวถอดรหัสคำสั่ง"]
-    ALU["ALU<br/>บวก / ลบ"]
-    A["Register A"]
-    C["Carry flag"]
-    PCL["PC ถัดไป<br/>+1 หรือกระโดด"]
-    PC["PC"]
-    OUT["Output port"]
-
-    PC -- "address" --> RAM
-    RAM -- "คำสั่ง" --> DEC
-    RAM -- "ค่าที่ใช้คำนวณ" --> ALU
-    A --> ALU
-    DEC -- "ADD / SUB" --> ALU
+    PC[PC] -->|address| RAM[RAM, 16 bytes]
+    RAM -->|คำสั่ง| DEC[ตัวถอดรหัสคำสั่ง]
+    RAM -->|ค่าที่ใช้คำนวณ| ALU[ALU, บวกและลบ]
+    A[Register A] --> ALU
+    DEC -->|ADD, SUB| ALU
     ALU --> A
-    ALU --> C
-    DEC -- "JMP / JZ / JC" --> PCL
-    A -- "เป็น 0 ไหม" --> PCL
-    C --> PCL
-    PCL --> PC
-    A -- "STA" --> RAM
-    A -- "OUT" --> OUT
+    ALU --> C[Carry flag]
+    DEC -->|JMP, JZ, JC| NPC[PC ถัดไป, บวก 1 หรือกระโดด]
+    A -->|เป็น 0| NPC
+    C --> NPC
+    NPC --> PC
+    A -->|STA| RAM
+    A -->|OUT| OUTP[Output port]
 ```
 
 ### ลำดับการทำงานของการรันหนึ่งครั้ง
 
 ```mermaid
 sequenceDiagram
-    participant You as คุณ
+    participant U as คุณ
     participant R as jev_run.py
     participant J as Jev API
-    participant C as cpu.json<br/>NAND 2,102 ตัว
-
-    You->>R: programs/add.json a=40 b=3
-    R->>R: แปลง code + input ลง RAM
-    R->>J: 1 request, 4 คำถาม (หนึ่งข้อต่อหนึ่งกรณีของ gate)
-    J-->>R: p(ใช่) = .00 · .01 · .01 · .99
+    participant C as cpu.json
+    U->>R: programs/add.json a=40 b=3
+    R->>R: แปลง code และ input ลง RAM
+    R->>J: 1 request มีคำถาม gate 4 ข้อ
+    J-->>R: คำตอบ 0.00, 0.01, 0.01, 0.99
     loop ทุกรอบ clock จนเจอ HLT
         R->>C: ประมวลผล 59 ชั้นด้วยคำตอบของ Jev
         C-->>R: PC, A, carry, RAM, OUT ใหม่
     end
-    R-->>You: answer: 43 · 446 tokens · 5 รอบ clock
+    R-->>U: คำตอบ 43, 446 tokens, 5 รอบ clock
 ```
 
 | Jev: logic ทั้งหมด | โค้ด: ไม่มี logic |
